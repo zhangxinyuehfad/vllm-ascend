@@ -98,6 +98,7 @@ MORE_ARGS = {
 }
 
 multiprocessing.set_start_method("spawn", force=True)
+os.environ["VLLM_USE_V1"] = "1"
 
 
 def run_test(queue, model, max_model_len, model_type, more_args):
@@ -131,9 +132,7 @@ def run_test(queue, model, max_model_len, model_type, more_args):
 
 
 @pytest.mark.parametrize("model", MODEL_NAME)
-@pytest.mark.parametrize("VLLM_USE_V1", ["1"])
-def test_lm_eval_accuracy(monkeypatch: pytest.MonkeyPatch, model, VLLM_USE_V1):
-    os.environ["VLLM_USE_V1"] = VLLM_USE_V1
+def test_lm_eval_accuracy(monkeypatch: pytest.MonkeyPatch, model):
     with monkeypatch.context():
         result_queue: Queue[float] = multiprocessing.Queue()
         p = multiprocessing.Process(target=run_test,
@@ -149,11 +148,9 @@ def test_lm_eval_accuracy(monkeypatch: pytest.MonkeyPatch, model, VLLM_USE_V1):
 
 
 @pytest.mark.parametrize("max_tokens", [10])
-@pytest.mark.parametrize("VLLM_USE_V1", ["1"])
 @pytest.mark.parametrize("model", ["Qwen/Qwen2.5-0.5B-Instruct"])
-def test_lm_eval_accuracy_dp(model, max_tokens, VLLM_USE_V1):
-    os.environ["VLLM_USE_V1"] = VLLM_USE_V1
-    log_file = open("accuracy.log", "a")
+def test_lm_eval_accuracy_dp(model, max_tokens):
+    log_file = open("accuracy_pd.log", "a+")
     cmd = [
         "vllm", "serve", model, "--max_model_len", "4096",
         "--tensor_parallel_size", "2", "--data_parallel_size", "2"
@@ -208,15 +205,14 @@ def test_lm_eval_accuracy_dp(model, max_tokens, VLLM_USE_V1):
 
 
 @pytest.mark.parametrize("max_tokens", [10])
-@pytest.mark.parametrize("VLLM_USE_V1", ["1"])
 @pytest.mark.parametrize("model", ["Qwen/Qwen3-30B-A3B"])
-def test_lm_eval_accuracy_etp(model, max_tokens, VLLM_USE_V1):
-    os.environ["VLLM_USE_V1"] = VLLM_USE_V1
-    log_file = open("accuracy.log", "a")
+def test_lm_eval_accuracy_etp(model, max_tokens):
+    log_file = open("accuracy_etp.log", "a+")
     cmd = [
-        "vllm", "serve", model, "--tensor_parallel_size", "4",
-        "--enforce_eager", "True", "--enable_expert_parallel", "True",
-        "--additional_config", '{"expert_tensor_parallel_size": "4"}'
+        "vllm", "serve", model, "--max_model_len", "4096",
+        "--tensor_parallel_size", "4", "--enforce_eager",
+        "--enable_expert_parallel", "--additional_config",
+        '{"expert_tensor_parallel_size": "4"}'
     ]
     server_proc = subprocess.Popen(cmd,
                                    stdout=log_file,
