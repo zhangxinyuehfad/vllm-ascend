@@ -27,7 +27,6 @@ if ! cmp -s "${OLD}" "${NEW}"; then
     echo
     cat "${NEW}"
     # Enable this after workflow merged
-
     curl -X PATCH \
         -H "Authorization: token ${PR_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
