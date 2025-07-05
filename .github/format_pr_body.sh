@@ -26,9 +26,7 @@ if ! cmp -s "${OLD}" "${NEW}"; then
     echo "Updating PR body:"
     echo
     cat "${NEW}"
-
     gh pr edit --body-file "${NEW}" "${PR_NUMBER}"
-
 else
     echo "No changes needed"
 fi
