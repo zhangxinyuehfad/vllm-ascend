@@ -26,6 +26,12 @@ if ! cmp -s "${OLD}" "${NEW}"; then
     echo "Updating PR body:"
     echo
     cat "${NEW}"
+    # # Enable this after workflow merged
+    # curl -X PATCH \
+    #     -H "Authorization: token ${PR_TOKEN}" \
+    #     -H "Accept: application/vnd.github.v3+json" \
+    #     -d '{"body":"NEW_DESCRIPTION_HERE"}' \
+    #     https://api.github.com/repos/Yikun/vllm-ascend/pulls/"${PR_NUMBER}"
     gh pr edit --body-file "${NEW}" "${PR_NUMBER}"
 else
     echo "No changes needed"
