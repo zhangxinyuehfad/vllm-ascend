@@ -182,7 +182,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_TOKEN: ${{ secrets.PR_TOKEN }}
         run: |
-          bash $GITHUB_WORKSPACE/.github/format_pr_body.sh "${{ github.event.number }}" "vLLM: ${{ env.VLLM_COMMIT_URL }}"
+          gh pr edit --body-file "vLLM: ${{ env.VLLM_COMMIT_URL }}" "${{ github.event.number }}"
 
       # - name: Install vllm-project/vllm-ascend
       #   run: |
