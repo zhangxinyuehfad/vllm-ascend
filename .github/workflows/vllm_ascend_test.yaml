@@ -179,10 +179,16 @@ jobs:
       - name: Update PR description
         if: ${{ github.event_name == 'pull_request' && matrix.vllm_version == 'main' }}
         env:
-          GH_TOKEN: ${{ github.token }}
           PR_TOKEN: ${{ secrets.PR_TOKEN }}
         run: |
-          gh pr edit --body "vLLM: ${{ env.VLLM_COMMIT_URL }}" "${{ github.event.number }}"
+          # gh pr edit --body "vLLM: ${{ env.VLLM_COMMIT_URL }}" "${{ github.event.number }}"
+          # Enable this after workflow merged
+          curl -X PATCH \
+              -H "Authorization: token ${PR_TOKEN}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d '{"body":"NEW_DESCRIPTION_HERE"}' \
+              https://api.github.com/repos/Yikun/vllm-ascend/pulls/"${PR_NUMBER}"
+
       # - name: Install vllm-project/vllm-ascend
       #   run: |
       #     export PIP_EXTRA_INDEX_URL=https://mirrors.huaweicloud.com/ascend/repos/pypi
