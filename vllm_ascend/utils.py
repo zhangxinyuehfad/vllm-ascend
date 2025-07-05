@@ -15,7 +15,7 @@
 # limitations under the License.
 # This file is a part of the vllm-ascend project.
 # Adapted from vllm-project/vllm/vllm/worker/worker.py
-#
+# #
 #
 import atexit
 import math
