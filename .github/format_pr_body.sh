@@ -27,7 +27,13 @@ if ! cmp -s "${OLD}" "${NEW}"; then
     echo
     cat "${NEW}"
     # Enable this after workflow merged
-    gh pr edit --body-file "${NEW}" "${PR_NUMBER}"
+
+    curl -X PATCH \
+        -H "Authorization: token ${PR_TOKEN}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        -d '{"body":"NEW_DESCRIPTION_HERE"}' \
+        https://api.github.com/repos/OWNER/REPO/pulls/"${PR_NUMBER}"
+    # gh pr edit --body-file "${NEW}" "${PR_NUMBER}"
 else
     echo "No changes needed"
 fi

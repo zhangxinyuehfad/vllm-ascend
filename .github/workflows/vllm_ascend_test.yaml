@@ -179,7 +179,7 @@ jobs:
       - name: Update PR description
         if: ${{ github.event_name == 'pull_request' && matrix.vllm_version == 'main' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TOKEN: ${{ secrets.PR_TOKEN }}
         run: |
           bash $GITHUB_WORKSPACE/.github/format_pr_body.sh "${{ github.event.number }}" "vLLM: ${{ env.VLLM_COMMIT_URL }}"
 
