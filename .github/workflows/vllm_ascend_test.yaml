@@ -175,20 +175,11 @@ jobs:
 
       - name: Checkout vllm-project/vllm-ascend repo
         uses: actions/checkout@v4
-      - name: Check permissions
-        run: |
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission
-      - uses: actions/github-script@v7
-        if: ${{ github.event_name == 'pull_request' && matrix.vllm_version == 'main' }}
-        with:
-          script: |
-            github.rest.pulls.update({
-                pull_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: context.payload.pull_request.body + '\n---\n' + "vLLM: ${{ env.VLLM_COMMIT_URL }}"
-            })
+
+  updatepr:
+    uses: ./.github/workflows/format_pr_body.yaml
+    with:
+      append-body: "xxxxx"
 
       # - name: Install vllm-project/vllm-ascend
       #   run: |
