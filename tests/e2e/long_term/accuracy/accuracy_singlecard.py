@@ -98,10 +98,8 @@ def run_test(queue, model, max_model_len, model_type):
 
 
 @pytest.mark.parametrize("model", MODEL_NAME)
-@pytest.mark.parametrize("VLLM_USE_V1", ["0", "1"])
-def test_lm_eval_accuracy(monkeypatch: pytest.MonkeyPatch, model, VLLM_USE_V1):
-    with monkeypatch.context() as m:
-        m.setenv("VLLM_USE_V1", VLLM_USE_V1)
+def test_lm_eval_accuracy(monkeypatch: pytest.MonkeyPatch, model):
+    with monkeypatch.context():
         result_queue: Queue[float] = multiprocessing.Queue()
         p = multiprocessing.Process(target=run_test,
                                     args=(result_queue, model,

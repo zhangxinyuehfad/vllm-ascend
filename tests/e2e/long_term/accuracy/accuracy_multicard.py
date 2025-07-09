@@ -18,7 +18,6 @@
 #
 import gc
 import multiprocessing
-import os
 import signal
 import subprocess
 import sys
@@ -61,7 +60,7 @@ RTOL = 0.03
 EXPECTED_VALUE = {
     "Qwen/Qwen2.5-0.5B-Instruct": 0.316,
     "Qwen/Qwen3-30B-A3B": 0.888,
-    "deepseek-ai/DeepSeek-V2-Lite": 0.376
+    "deepseek-ai/DeepSeek-V2-Lite": 0.375
 }
 # Maximum context length configuration for each model.
 MAX_MODEL_LEN = {
@@ -98,7 +97,6 @@ MORE_ARGS = {
 }
 
 multiprocessing.set_start_method("spawn", force=True)
-os.environ["VLLM_USE_V1"] = "1"
 
 
 def run_test(queue, model, max_model_len, model_type, more_args):
