@@ -34,7 +34,7 @@ def test_ngram_algo_correctness_for_single_no_match():
     block_size = 32
     num_gpu_blocks = 2048 // block_size
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
     vocab_size = 32_000
     device = 'npu:0'
 
@@ -92,7 +92,7 @@ def test_ngram_algo_correctness_for_batches_not_match_all():
     block_size = 32
     num_gpu_blocks = 2048 // block_size
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
     vocab_size = 32_000
     device = 'npu:0'
 
@@ -173,7 +173,7 @@ def test_ngram_algo_correctness_for_batches_match_all():
     block_size = 32
     num_gpu_blocks = 2048 // block_size
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
     vocab_size = 32_000
     device = 'npu:0'
 

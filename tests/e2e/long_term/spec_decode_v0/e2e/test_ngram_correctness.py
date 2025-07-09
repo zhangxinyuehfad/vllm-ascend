@@ -61,7 +61,7 @@ from tests.e2e.long_term.spec_decode_v0.utils import \
     }])
 @pytest.mark.parametrize("per_test_common_llm_kwargs", [
     {
-        "model_name": "JackFram/llama-68m",
+        "model_name": "vllm-ascend/llama-68m",
     },
 ])
 @pytest.mark.parametrize("baseline_llm_kwargs", [{}])
@@ -124,7 +124,7 @@ def test_ngram_e2e_greedy_correctness(vllm_runner, common_llm_kwargs,
     }])
 @pytest.mark.parametrize("per_test_common_llm_kwargs", [
     {
-        "model_name": "JackFram/llama-68m",
+        "model_name": "vllm-ascend/llama-68m",
     },
 ])
 @pytest.mark.parametrize("baseline_llm_kwargs", [{}])
@@ -188,7 +188,7 @@ def test_ngram_e2e_greedy_logprobs(vllm_runner, common_llm_kwargs,
     }])
 @pytest.mark.parametrize("per_test_common_llm_kwargs", [
     {
-        "model_name": "JackFram/llama-160m",
+        "model_name": "vllm-ascend/llama-160m",
     },
 ])
 @pytest.mark.parametrize("baseline_llm_kwargs", [{}])
@@ -242,7 +242,7 @@ def test_ngram_e2e_greedy_correctness_with_preemption(
 @pytest.mark.parametrize(
     "common_llm_kwargs",
     [{
-        "model_name": "JackFram/llama-68m",
+        "model_name": "vllm-ascend/llama-68m",
 
         # Skip cuda graph recording for fast test.
         "enforce_eager": True,
@@ -302,7 +302,7 @@ def test_ngram_different_k(vllm_runner, common_llm_kwargs,
 @pytest.mark.parametrize(
     "common_llm_kwargs",
     [{
-        "model_name": "JackFram/llama-68m",
+        "model_name": "vllm-ascend/llama-68m",
 
         # Skip cuda graph recording for fast test.
         "enforce_eager": True,
@@ -364,7 +364,7 @@ def test_ngram_disable_queue(vllm_runner, common_llm_kwargs,
 @pytest.mark.parametrize(
     "common_llm_kwargs",
     [{
-        "model_name": "JackFram/llama-68m",
+        "model_name": "vllm-ascend/llama-68m",
 
         # Skip cuda graph recording for fast test.
         "enforce_eager": True,

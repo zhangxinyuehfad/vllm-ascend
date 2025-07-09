@@ -49,7 +49,7 @@ from tests.e2e.long_term.spec_decode_v0.utils import \
 # main model
 # lmsys/vicuna-7b-v1.3 was to be used but it's causing
 # OOM in CI pipeline, so using a smaller model.
-MAIN_MODEL = "JackFram/llama-68m"
+MAIN_MODEL = "vllm-ascend/llama-68m"
 
 # speculative model
 SPEC_MODEL = "abhigoyal/vllm-medusa-llama-68m-random"

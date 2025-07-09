@@ -47,10 +47,10 @@ from tests.e2e.long_term.spec_decode_v0.utils import \
     maybe_enable_chunked_prefill
 
 # main model
-MAIN_MODEL = "JackFram/llama-160m"
+MAIN_MODEL = "vllm-ascend/llama-160m"
 
 # speculative model
-SPEC_MODEL = "ibm-ai-platform/llama-160m-accelerator"
+SPEC_MODEL = "vllm-ascend/llama-160m-accelerator"
 
 # max. number of speculative tokens: this corresponds to
 # n_predict in the config.json of the speculator model.

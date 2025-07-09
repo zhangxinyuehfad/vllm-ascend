@@ -96,7 +96,7 @@ def test_same_output_for_single_step():
     worker for num_steps=1.
     """
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
 
     block_size = 32
     num_gpu_blocks = 2048 // block_size
@@ -181,7 +181,7 @@ def test_same_output_for_multi_step():
     then runs the worker num_steps times, and compares the output.
     """
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
 
     block_size = 16
     num_gpu_blocks = 2048 // block_size
@@ -308,7 +308,7 @@ def test_multi_step_with_batch_expansion_correct_output():
     expanded batch is then used for predicting the next tokens.
     """
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
 
     block_size = 16
     num_gpu_blocks = 2048 // block_size
@@ -403,7 +403,7 @@ def test_multi_step_with_batch_expansion_incorrect_output():
     the sequence ID is specified incorrectly.
     """
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
 
     block_size = 16
     num_gpu_blocks = 2048 // block_size
@@ -504,7 +504,7 @@ def test_multi_step_correct_kvcache(num_steps):
     is correctly updated for sequences with bonus token.
     """
     seed = 100
-    model_name = "JackFram/llama-68m"
+    model_name = "vllm-ascend/llama-68m"
 
     block_size = 16
     num_gpu_blocks = 2048 // block_size
@@ -768,7 +768,7 @@ def test_use_draft_model_runner_advance_step():
     when applicable.
     """
     seed = 100
-    model_name = 'JackFram/llama-68m'
+    model_name = 'vllm-ascend/llama-68m'
 
     k = 5
     batch_size = 32

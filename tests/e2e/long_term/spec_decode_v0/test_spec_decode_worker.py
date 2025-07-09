@@ -932,14 +932,14 @@ def test_correctly_load_weight_for_eagle():
     num_gpu_blocks = 8096 // block_size
     target_worker = create_worker(
         NPUWorker,
-        "JackFram/llama-68m",
+        "vllm-ascend/llama-68m",
         block_size,
         num_gpu_blocks,
         seed,
     )
     draft_worker = create_worker(
         MultiStepWorker,
-        "abhigoyal/vllm-eagle-llama-68m-random",
+        "vllm-ascend/vllm-eagle-llama-68m-random",
         block_size,
         num_gpu_blocks,
         seed,

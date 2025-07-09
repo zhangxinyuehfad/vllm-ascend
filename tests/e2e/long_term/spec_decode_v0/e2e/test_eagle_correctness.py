@@ -43,10 +43,10 @@ from tests.e2e.long_term.spec_decode_v0.e2e.conftest import \
     run_equality_correctness_test
 
 # main model
-MAIN_MODEL = "JackFram/llama-68m"
+MAIN_MODEL = "vllm-ascend/llama-68m"
 
 # speculative model
-SPEC_MODEL = "abhigoyal/vllm-eagle-llama-68m-random"
+SPEC_MODEL = "vllm-ascend/vllm-eagle-llama-68m-random"
 
 # max. number of speculative tokens: this corresponds to
 # num_heads in the config.json of the speculator model.
