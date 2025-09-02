@@ -50,12 +50,6 @@ class TestTokenDispatcherWithMC2(TestBase):
             return_value=self.forward_context)
         self.forward_context_patch.start()
 
-        # Mock get_ascend_soc_version()
-        self.ascend_soc_version_patch = patch(
-            "vllm_ascend.ops.moe_dispatcher.token_dispatcher.get_ascend_soc_version",
-            return_value=AscendSocVersion.A3)
-        self.ascend_soc_version_patch.start()
-
         kwargs = {"with_quant": False, "top_k": 8, "num_experts": 128}
         self.dispatcher = TokenDispatcherWithMC2(**kwargs)
         self.row_idx = torch.arange(10, dtype=torch.int32)

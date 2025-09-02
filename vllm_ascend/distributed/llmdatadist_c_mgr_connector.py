@@ -28,7 +28,7 @@ from vllm.v1.core.sched.output import SchedulerOutput
 from vllm.v1.request import Request, RequestStatus
 
 import vllm_ascend.envs as envs_ascend
-from vllm_ascend.utils import AscendSocVersion, get_ascend_soc_version
+from setup import AscendSocVersion 
 
 TORCH_DTYPE_TO_NPU_DTYPE = {
     torch.half: llm_datadist.DataType.DT_FLOAT16,
@@ -336,7 +336,8 @@ class LLMDataDistCMgrConnectorWorker():
                                         self.local_agent_metadata.cluster_id)
         self.init_llm_datadist()
         self.finished_reqs: set[str] = set()
-        self.soc_info = get_ascend_soc_version()
+        from vllm_ascend._build_info import __ascend_soc_version__
+        self.soc_info = __ascend_soc_version__
         # Set hccl deterministic for model execute
         os.environ["HCCL_DETERMINISTIC"] = "true"
         self.done_receiving_counts: defaultdict[str,

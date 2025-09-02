@@ -4,7 +4,8 @@ import os
 
 import torch.distributed as dist
 
-from vllm_ascend.utils import AscendSocVersion, init_ascend_soc_version, get_ascend_soc_version
+from setup import AscendSocVersion 
+from vllm_ascend._build_info import __ascend_soc_version__
 
 parser = argparse.ArgumentParser(
     description="Arguments of rank table generator", )
@@ -34,8 +35,7 @@ local_rank = os.environ.get("LOCAL_RANK")
 # and is different from WORLD_SIZE in gen_rank_table.sh.
 world_size = os.environ.get("WORLD_SIZE")
 
-init_ascend_soc_version()
-soc_info = get_ascend_soc_version()
+soc_info = __ascend_soc_version__
 
 
 def get_cmd_stdout(cmd):

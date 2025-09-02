@@ -22,6 +22,8 @@ import logging
 import os
 import subprocess
 import sys
+import torch_npu
+from enum import Enum
 from sysconfig import get_paths
 from typing import Dict, List
 
@@ -31,6 +33,19 @@ from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 from setuptools_scm import get_version
+
+# Supported SOC_VERSION codes
+ASCEND_A2_SOC_VERSION = ["ASCEND910B1"]
+ASCEND_A3_SOC_VERSION = ["ASCEND910B3"]
+ASCEND_310P_SOC_VERSION = ["ASCEND310P3"]
+
+# TODO(zzzzwwjj): Currently there is no clear SOC_VERSION policy for A2 and A3 in CANN.
+# So we get the version dynamically. In the future, we should get the version info from _build_info like 310p does.
+class AscendSocVersion(Enum):
+    A2 = 0
+    A3 = 1
+    P3 = 2
+    UNDEFINED = 3
 
 
 def load_module_from_path(module_name, path):
@@ -79,6 +94,7 @@ class CMakeExtension(Extension):
         self.cmake_lists_dir = os.path.abspath(cmake_lists_dir)
 
 
+
 class custom_build_info(build_py):
 
     def run(self):
@@ -91,11 +107,20 @@ class custom_build_info(build_py):
             raise ValueError(
                 "SOC version 310 only supports custom kernels. Please set COMPILE_CUSTOM_KERNELS=1 to enable custom kernels."
             )
+        if soc_version in ASCEND_A2_SOC_VERSION:
+            ascend_soc_version = AscendSocVersion.A2
+        elif soc_version in ASCEND_A3_SOC_VERSION:
+            ascend_soc_version = AscendSocVersion.A3
+        elif soc_version == ASCEND_310P_SOC_VERSION:
+            ascend_soc_version = AscendSocVersion.P3
+        else:
+            ascend_soc_version = AscendSocVersion.UNDEFINED
 
         package_dir = os.path.join(ROOT_DIR, "vllm_ascend", "_build_info.py")
         with open(package_dir, "w+") as f:
             f.write('# Auto-generated file\n')
             f.write(f"__soc_version__ = '{soc_version}'\n")
+            f.write(f"__ascend_soc_version__ = '{ascend_soc_version}'\n")
             f.write(
                 f"__sleep_mode_enabled__ = {envs.COMPILE_CUSTOM_KERNELS}\n")
         logging.info(

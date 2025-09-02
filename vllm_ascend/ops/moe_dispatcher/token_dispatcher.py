@@ -32,7 +32,7 @@ from vllm_ascend.distributed.parallel_state import get_mc2_group
 from vllm_ascend.distributed.tensor_parallel import \
     gather_from_sequence_parallel_region
 from vllm_ascend.ops.comm_utils import async_all_to_all
-from vllm_ascend.utils import AscendSocVersion, get_ascend_soc_version
+from setup import AscendSocVersion
 
 _Dispatchers: Dict[str, Any] = {}
 
@@ -118,12 +118,13 @@ class TokenDispatcherWithMC2(MoETokenDispatcher):
         self.ep_world_size = get_mc2_group().world_size
         self.enable_dispatch_v2 = hasattr(torch_npu,
                                           "npu_moe_distribute_dispatch_v2")
+        from vllm_ascend._build_info import __ascend_soc_version__ # type: ignore
         self.need_extra_args = (
-            get_ascend_soc_version() == AscendSocVersion.A3)
+            __ascend_soc_version__ == AscendSocVersion.A3)
 
         # NOTE: Currently, when in A3, we need to pass in some extra param into dispatch & combine
         self.a3_need_extra_args = \
-            get_ascend_soc_version() == AscendSocVersion.A3
+            __ascend_soc_version__ == AscendSocVersion.A3
         self.output = None
         self.assist_info_for_combine = None
         self.ep_recv_counts = None

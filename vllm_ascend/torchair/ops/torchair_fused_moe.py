@@ -49,7 +49,6 @@ from vllm_ascend.quantization.quant_config import AscendFusedMoEMethod
 from vllm_ascend.torchair.utils import npu_stream_switch, npu_wait_tensor
 from vllm_ascend.utils import (AscendSocVersion, dispose_tensor,
                                get_all_reduce_merge_state,
-                               get_ascend_soc_version,
                                get_rm_router_logits_state, is_310p)
 
 
@@ -72,11 +71,12 @@ def torchair_fused_experts_with_mc2(
     ep_world_size = moe_parallel_config.ep_size
 
     # NOTE: Currently, when in A3 or in torchair graph, we need to pass in some extra param into dispatch & combine
-    need_extra_args = (get_ascend_soc_version() == AscendSocVersion.A3
+    from vllm_ascend._build_info import __ascend_soc_version__ # type: ignore
+    need_extra_args = (__ascend_soc_version__ == AscendSocVersion.A3
                        or is_torchair)
 
     # NOTE: Currently, when in A3, we need to pass in some extra param into dispatch & combine
-    a3_need_extra_args = get_ascend_soc_version() == AscendSocVersion.A3
+    a3_need_extra_args = __ascend_soc_version__ == AscendSocVersion.A3
 
     enable_dispatch_v2 = hasattr(torch_npu, "npu_moe_distribute_dispatch_v2")
 

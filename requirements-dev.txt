@@ -5,7 +5,7 @@ openai
 pytest >= 6.0
 pytest-asyncio
 pytest-mock
-lm-eval==0.4.8
+lm-eval==0.4.9.1
 types-jsonschema
 xgrammar
 zmq

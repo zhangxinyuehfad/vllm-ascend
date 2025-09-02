@@ -14,7 +14,7 @@ from vllm.model_executor.layers.fused_moe import FusedMoEConfig
 from vllm_ascend.distributed.communication_op import \
     data_parallel_reduce_scatter
 from vllm_ascend.distributed.parallel_state import get_mc2_group
-from vllm_ascend.utils import AscendSocVersion, get_ascend_soc_version
+from setup import AscendSocVersion
 
 
 class MoECommMethod(ABC):
@@ -311,7 +311,8 @@ class MC2CommImpl(MoECommMethod):
         # Feature flags
         self.enable_dispatch_v2 = hasattr(torch_npu,
                                           "npu_moe_distribute_dispatch_v2")
-        self.is_ascend_a3 = get_ascend_soc_version() == AscendSocVersion.A3
+        from vllm_ascend._build_info import __ascend_soc_version__ # type: ignore
+        self.is_ascend_a3 = __ascend_soc_version__ == AscendSocVersion.A3
         self.need_extra_args = self.is_ascend_a3
         self._restore_tp_across_dp()
 
