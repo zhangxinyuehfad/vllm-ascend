@@ -15,6 +15,12 @@
 # This file is a part of the vllm-ascend project.
 #
 
+# Supported SOC_VERSION codes
+ASCEND_A2_SOC_VERSION = range(220, 226)
+ASCEND_A3_SOC_VERSION = range(250, 256)
+ASCEND_310P_SOC_VERSION = [202]
+
+__ascend_soc_version__ = None  
 
 def register():
     """Register the NPU platform."""
@@ -23,5 +29,15 @@ def register():
 
 
 def register_model():
+    global __ascend_soc_version__
+    import torch_npu  # type: ignore
+    raw = torch_npu.npu.get_soc_version()
+    __ascend_soc_version__ = (
+    "A2"   if raw in ASCEND_A2_SOC_VERSION   else
+    "A3"   if raw in ASCEND_A3_SOC_VERSION   else
+    "310P" if raw in ASCEND_310P_SOC_VERSION else
+    "UNDEFINED"
+    )
     from .models import register_model
     register_model()
+

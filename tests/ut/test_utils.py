@@ -30,21 +30,21 @@ class TestUtils(TestBase):
 
     def test_is_310p(self):
         utils._IS_310P = None
-        with mock.patch("vllm_ascend._build_info.__soc_version__",
+        with mock.patch("vllm_ascend.__soc_version__",
                         "Ascend310P3"):
             self.assertTrue(utils.is_310p())
         utils._IS_310P = None
-        with mock.patch("vllm_ascend._build_info.__soc_version__",
+        with mock.patch("vllm_ascend.__soc_version__",
                         "Ascend910P1"):
             self.assertFalse(utils.is_310p())
 
     def test_sleep_mode_enabled(self):
         utils._SLEEP_MODE_ENABLED = None
-        with mock.patch("vllm_ascend._build_info.__sleep_mode_enabled__",
+        with mock.patch("vllm_ascend.__sleep_mode_enabled__",
                         True):
             self.assertTrue(utils.sleep_mode_enabled())
         utils._SLEEP_MODE_ENABLED = None
-        with mock.patch("vllm_ascend._build_info.__sleep_mode_enabled__",
+        with mock.patch("vllm_ascend.__sleep_mode_enabled__",
                         False):
             self.assertFalse(utils.sleep_mode_enabled())
 

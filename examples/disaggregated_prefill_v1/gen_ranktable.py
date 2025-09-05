@@ -4,7 +4,7 @@ import os
 
 import torch.distributed as dist
 
-from vllm_ascend.utils import AscendSocVersion, init_ascend_soc_version, get_ascend_soc_version
+from vllm_ascend import __ascend_soc_version__
 
 parser = argparse.ArgumentParser(
     description="Arguments of rank table generator", )
@@ -38,8 +38,7 @@ local_rank = os.environ.get("LOCAL_RANK")
 # and is different from WORLD_SIZE in gen_rank_table.sh.
 world_size = os.environ.get("WORLD_SIZE")
 
-init_ascend_soc_version()
-soc_info = get_ascend_soc_version()
+soc_info = __ascend_soc_version__
 
 
 def get_cmd_stdout(cmd):
@@ -71,34 +70,35 @@ else:
 local_device_list: list[dict[str, str]] = list()
 if local_rank == "0":
     super_pod_id = "0"
-    for idx in range(len(local_device_ids)):
-        device_id = local_device_ids[idx]
-        if soc_info == AscendSocVersion.A3:
-            device_ip = get_cmd_stdout(
-                f"{hccn_tool_path} -i {device_id} -vnic -g | grep ipaddr"
-            ).split(":")[1].strip()
-            super_device_id = get_cmd_stdout(
-                f"npu-smi info -t spod-info -i {card_id} -c {chip_id} | grep SDID"
-            ).split(":")[1].strip()
-            super_pod_id = get_cmd_stdout(
-                f"npu-smi info -t spod-info -i {card_id} -c {chip_id} | grep \"Super Pod ID\""
-            ).split(":")[1].strip()
-        else:
-            device_ip = get_cmd_stdout(
-                f"{hccn_tool_path} -i {device_id} -ip -g | grep ipaddr"
-            ).split(":")[1].strip()
+    for card_id in range(num_cards):
+        for chip_id in range(chips_per_card):
+            device_id = card_id * chips_per_card + chip_id
+            if soc_info == "A3":
+                device_ip = get_cmd_stdout(
+                    f"{hccn_tool_path} -i {device_id} -vnic -g | grep ipaddr"
+                ).split(":")[1].strip()
+                super_device_id = get_cmd_stdout(
+                    f"npu-smi info -t spod-info -i {card_id} -c {chip_id} | grep SDID"
+                ).split(":")[1].strip()
+                super_pod_id = get_cmd_stdout(
+                    f"npu-smi info -t spod-info -i {card_id} -c {chip_id} | grep \"Super Pod ID\""
+                ).split(":")[1].strip()
+            else:
+                device_ip = get_cmd_stdout(
+                    f"{hccn_tool_path} -i {device_id} -ip -g | grep ipaddr"
+                ).split(":")[1].strip()
 
-        device_info = {
-            "server_id": local_host,
-            "device_id": str(device_id),
-            "device_ip": str(device_ip),
-        }
-        if soc_info == AscendSocVersion.A3:
-            device_info.update({
-                "super_pod_id": str(super_pod_id),
-                "super_device_id": str(super_device_id)
-            })
-        local_device_list.append(device_info)
+            device_info = {
+                "server_id": local_host,
+                "device_id": str(device_id),
+                "device_ip": str(device_ip),
+            }
+            if soc_info == "A3":
+                device_info.update({
+                    "super_pod_id": str(super_pod_id),
+                    "super_device_id": str(super_device_id)
+                })
+            local_device_list.append(device_info)
 
 dist.init_process_group(backend=dist.Backend.GLOO)
 global_device_list = [None] * dist.get_world_size()

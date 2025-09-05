@@ -30,7 +30,7 @@ from vllm_ascend.ops.fused_moe import (AscendFusedMoE,
                                        AscendUnquantizedFusedMoEMethod)
 from vllm_ascend.ops.layers.experts_selector import select_experts
 from vllm_ascend.ops.layers.moe_mlp import cumsum_group_list, unified_apply_mlp
-from vllm_ascend.utils import AscendSocVersion, adapt_patch
+from vllm_ascend.utils import adapt_patch
 
 adapt_patch(True)
 
@@ -156,7 +156,7 @@ def mock_dist_env(mocker: MockerFixture):
                     scheduler_config=MagicMock(max_num_seqs=4),
                     model_config=MagicMock(max_model_len=2048)
                 )), \
-        patch("vllm_ascend.utils.get_ascend_soc_version", return_value=AscendSocVersion.A3), \
+        patch("vllm_ascend._build_info.__ascend_soc_version__", return_value="A3"), \
         patch.object(token_dispatcher_module, 'setup_token_dispatchers', mock_setup_token_dispatchers), \
         patch('vllm_ascend.ops.layers.moe_mlp.get_forward_context',
                 return_value=mock_forward_context_obj):
@@ -465,7 +465,7 @@ class TestAscendUnquantizedFusedMoEMethod:
                                     token_dispatcher=selected_token_dispatcher)
 
         with patch("vllm_ascend.ops.fused_moe.get_forward_context", return_value=forward_context), \
-             patch("vllm_ascend.utils.get_ascend_soc_version", return_value=AscendSocVersion.A3):
+             patch("vllm_ascend._build_info.__ascend_soc_version__", return_value="A3"):
 
             expert_map = torch.tensor([0, 1, 2, -1, -1, -1, -1, -1])
             moe_method.ep_size = ep_size
