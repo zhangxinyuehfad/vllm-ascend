@@ -4,7 +4,7 @@ import os
 
 import torch.distributed as dist
 
-from vllm_ascend.utils import AscendSocVersion, init_ascend_soc_version, get_ascend_soc_version
+from vllm_ascend import _build_info
 
 parser = argparse.ArgumentParser(
     description="Arguments of rank table generator", )
@@ -34,8 +34,7 @@ local_rank = os.environ.get("LOCAL_RANK")
 # and is different from WORLD_SIZE in gen_rank_table.sh.
 world_size = os.environ.get("WORLD_SIZE")
 
-init_ascend_soc_version()
-soc_info = get_ascend_soc_version()
+soc_info = _build_info.__ascend_soc_version__
 
 
 def get_cmd_stdout(cmd):
@@ -61,7 +60,7 @@ if local_rank == "0":
     for card_id in range(num_cards):
         for chip_id in range(chips_per_card):
             device_id = card_id * chips_per_card + chip_id
-            if soc_info == AscendSocVersion.A3:
+            if soc_info == "A3":
                 device_ip = get_cmd_stdout(
                     f"{hccn_tool_path} -i {device_id} -vnic -g | grep ipaddr"
                 ).split(":")[1].strip()
@@ -81,7 +80,7 @@ if local_rank == "0":
                 "device_id": str(device_id),
                 "device_ip": str(device_ip),
             }
-            if soc_info == AscendSocVersion.A3:
+            if soc_info == "A3":
                 device_info.update({
                     "super_pod_id": str(super_pod_id),
                     "super_device_id": str(super_device_id)

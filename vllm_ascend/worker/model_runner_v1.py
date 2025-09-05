@@ -93,8 +93,7 @@ from vllm_ascend.spec_decode.mtp_proposer import MtpProposer
 from vllm_ascend.torchair.torchair_attention import AscendTorchairMetadata
 from vllm_ascend.torchair.torchair_mla import AscendMLATorchairMetadata
 from vllm_ascend.utils import (ACL_FORMAT_FRACTAL_ND, ACL_FORMAT_FRACTAL_NZ,
-                               AscendSocVersion, ProfileExecuteDuration,
-                               get_ascend_soc_version, is_310p,
+                               ProfileExecuteDuration, is_310p,
                                lmhead_tp_enable, vllm_version_is)
 from vllm_ascend.worker.npu_input_batch import CachedRequestState, InputBatch
 
@@ -1434,39 +1433,15 @@ class NPUModelRunner(LoRAModelRunnerMixin):
         )
 
     def _select_moe_comm_method(self, num_tokens: int) -> str:
-        """1. If expert parallel is not enabled, we use all-gather since MC2 and all-to-all
-        are designed for expert parallelism.
-        2. If expert parallel is enabled, we need to consider the soc version and the
-        number of tokens. This is based on the observation that all-gather is more
-        efficient than all-to-all when running on A2.
-            
-            a. For A2, we choose from MC2 and all-gather.
-            
-            b. For A3, we choose from MC2 and all-to-all.
-            
-            In both cases, we use MC2 when the number of tokens is smaller than
-            a its capacity threshold.
+        from vllm_ascend import _build_info  # type : ignore
+        soc_version = _build_info.__ascend_soc_version__
 
-        Args:
-            num_tokens (int): The number of tokens in the current batch.
-
-        Raises:
-            ValueError: If the soc version is unsupported.
-
-        Returns:
-            str: The selected MoE communication method, either "allgather", "mc2", or "alltoall".
-        """
-        soc_version = get_ascend_soc_version()
-
-        if not self.parallel_config.enable_expert_parallel:
+        if num_tokens <= self.mc2_tokens_capacity:
+            moe_comm_method = "mc2"
+        elif soc_version in {"A2", "310P"}:
             moe_comm_method = "allgather"
-        elif soc_version in {AscendSocVersion.A2}:
-            if num_tokens <= self.mc2_tokens_capacity and self.parallel_config.world_size >= 16:
-                moe_comm_method = "mc2"
-            else:
-                moe_comm_method = "allgather"
-        elif soc_version in {AscendSocVersion.A3}:
-            moe_comm_method = "mc2" if num_tokens <= self.mc2_tokens_capacity else "alltoall"
+        elif soc_version in {"A3"}:
+            moe_comm_method = "alltoall"
         else:
             raise ValueError(f"Unsupported soc_version: {soc_version}")
 
