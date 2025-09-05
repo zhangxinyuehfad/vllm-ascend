@@ -20,10 +20,11 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import torch
 
 from tests.ut.base import TestBase
+from vllm_ascend import _build_info  # type: ignore
 from vllm_ascend.ops.moe_dispatcher.token_dispatcher import (
-    AscendSocVersion, TokenDispatcherWithAll2AllV,
-    TokenDispatcherWithAllGather, TokenDispatcherWithMC2, _Dispatchers,
-    _register_token_dispatcher, get_token_dispatcher, setup_token_dispatchers)
+    TokenDispatcherWithAll2AllV, TokenDispatcherWithAllGather,
+    TokenDispatcherWithMC2, _Dispatchers, _register_token_dispatcher,
+    get_token_dispatcher, setup_token_dispatchers)
 
 
 class TestTokenDispatcherWithMC2(TestBase):
@@ -50,10 +51,9 @@ class TestTokenDispatcherWithMC2(TestBase):
             return_value=self.forward_context)
         self.forward_context_patch.start()
 
-        # Mock get_ascend_soc_version()
         self.ascend_soc_version_patch = patch(
-            "vllm_ascend.ops.moe_dispatcher.token_dispatcher.get_ascend_soc_version",
-            return_value=AscendSocVersion.A3)
+            "vllm_ascend.__ascend_soc_version__",
+            return_value="A3")
         self.ascend_soc_version_patch.start()
 
         kwargs = {"with_quant": False, "top_k": 8, "num_experts": 128}
