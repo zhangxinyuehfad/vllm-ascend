@@ -22,7 +22,7 @@ import functools
 import math
 import os
 from contextlib import contextmanager, nullcontext
-from enum import Enum
+from dataclasses import dataclass
 from threading import Lock
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 

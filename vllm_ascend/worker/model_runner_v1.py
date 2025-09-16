@@ -118,9 +118,9 @@ from vllm_ascend.spec_decode.eagle_proposer import EagleProposer
 from vllm_ascend.spec_decode.interface import SpecDcodeType
 from vllm_ascend.spec_decode.mtp_proposer import MtpProposer
 from vllm_ascend.utils import (ACL_FORMAT_FRACTAL_ND, ACL_FORMAT_FRACTAL_NZ,
-                               AscendSocVersion, ProfileExecuteDuration,
-                               get_ascend_soc_version, is_310p,
-                               lmhead_tp_enable, vllm_version_is)
+                               ProfileExecuteDuration, get_graph_params,
+                               is_310p, lmhead_tp_enable, set_graph_params,
+                               vllm_version_is)
 from vllm_ascend.worker.npu_input_batch import CachedRequestState, InputBatch
 
 if TYPE_CHECKING:
