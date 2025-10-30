@@ -160,8 +160,6 @@ install_go() {
 }
 
 install_extra_components() {
-    echo "====> Installing extra components for DeepSeek-R1-W8A8"
-    
     mkdir -p /vllm-workspace/CANN
     
     if ! wget -q https://vllm-ascend.obs.cn-north-4.myhuaweicloud.com/vllm-ascend/a3/CANN-custom_ops-sfa-linux.aarch64.run; then
@@ -204,7 +202,6 @@ install_extra_components() {
     
     cat >> ~/.bashrc << 'EOF'
 
-# Extra components for DeepSeek-R1-W8A8
 export ASCEND_CUSTOM_OPP_PATH=/usr/local/Ascend/ascend-toolkit/latest/opp/vendors/customize:${ASCEND_CUSTOM_OPP_PATH}
 export LD_LIBRARY_PATH=/usr/local/Ascend/ascend-toolkit/latest/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
 source /vllm-workspace/CANN/vendors/customize/bin/set_env.bash
@@ -253,7 +250,7 @@ main() {
     checkout_src
     install_sys_dependencies
     install_vllm
-    if [[ "$CONFIG_YAML_PATH" == *"DeepSeek-R1-W8A8.yaml" ]]; then
+    if [[ "$CONFIG_YAML_PATH" == *"DeepSeek-V3_2-Exp-W8A8.yaml" ]]; then
         install_extra_components
     fi
     install_ais_bench
