@@ -43,6 +43,7 @@ concurrency:
 
 jobs:
   image_build:
+    if: github.event_name != 'pull_request'
     name: nightly image build
     uses: ./.github/workflows/_nightly_image_build.yaml
     with:
