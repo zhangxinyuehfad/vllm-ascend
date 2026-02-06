@@ -27,9 +27,13 @@ from vllm_ascend.utils import vllm_version_is
 
 if vllm_version_is("v0.15.0"):
     from vllm.attention.layer import Attention  # type: ignore
+    from vllm.compilation.vllm_inductor_pass import VllmInductorPass
+    from vllm.compilation.inductor_pass import get_pass_context
 else:
     from vllm.model_executor.layers.attention import Attention
-
+    from vllm.compilation.passes.inductor_pass import get_pass_context
+    from vllm.compilation.passes.vllm_inductor_pass import VllmInductorPass
+    
 
 class QKNormRopeFusionPattern:
     def __init__(self, vllm_config, head_dim, num_heads, num_kv_heads, eps=1e-6):

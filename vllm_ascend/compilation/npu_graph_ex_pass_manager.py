@@ -17,9 +17,14 @@
 #
 
 from torch import fx as fx
-from vllm.compilation.inductor_pass import get_pass_context
-from vllm.compilation.vllm_inductor_pass import VllmInductorPass
 from vllm.config import VllmConfig
+
+if vllm_version_is("v0.15.0"):
+    from vllm.compilation.vllm_inductor_pass import VllmInductorPass
+    from vllm.compilation.inductor_pass import get_pass_context
+else:
+    from vllm.compilation.passes.inductor_pass import get_pass_context
+    from vllm.compilation.passes.vllm_inductor_pass import VllmInductorPass
 
 
 class NpuGraphEXPassManager:
