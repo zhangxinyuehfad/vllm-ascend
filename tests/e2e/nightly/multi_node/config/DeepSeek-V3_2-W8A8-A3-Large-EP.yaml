@@ -10,7 +10,6 @@ env_common:
   OMP_NUM_THREADS: 10
   PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
   HCCL_BUFFSIZE: 1024
-  VLLM_TORCH_PROFILER_DIR: "./vllm_profile"
   VLLM_TORCH_PROFILER_WITH_STACK: 0
   ASCEND_AGGREGATE_ENABLE: 1
   ASCEND_TRANSPORT_PRINT: 1
@@ -151,7 +150,7 @@ deployment:
           '{"kv_connector": "MooncakeConnectorV1",
           "kv_role": "kv_consumer",
           "kv_port": "30200",
-          "engine_id": "2",
+          "engine_id": "1",
           "kv_connector_extra_config": {
                       "use_ascend_direct": true,
                       "prefill": {
@@ -199,7 +198,7 @@ deployment:
           '{"kv_connector": "MooncakeConnectorV1",
           "kv_role": "kv_consumer",
           "kv_port": "30200",
-          "engine_id": "2",
+          "engine_id": "1",
           "kv_connector_extra_config": {
                       "use_ascend_direct": true,
                       "prefill": {
