@@ -56,7 +56,7 @@ from vllm_ascend.compilation.acl_graph import (
 )
 from vllm_ascend.device.device_op import DeviceOperator
 from vllm_ascend.ops.flashcomm2_oshard_manager import flashcomm2_oshard_manager
-from vllm_ascend.utils import weak_ref_tensors
+from vllm_ascend.utils import vllm_version_is, weak_ref_tensors
 
 # default max value of sliding window size
 SWA_INT_MAX = 2147483647
@@ -549,6 +549,17 @@ class AscendAttentionBackendImpl(AttentionImpl):
     ) -> torch.Tensor:
         key, value, block_size, block_table, actual_seq_lengths_kv = self._get_fia_params(key, value, attn_metadata)
 
+        # On vllm > 0.19.0, actual_seq_lengths_q[-1] (actual decode token count)
+        # can differ from the padded batch size (e.g. 6 actual tokens in a batch
+        # padded to 8).  graph_params dicts are keyed by registered capture sizes
+        # (padded), so using the actual count causes KeyError.  Use query.shape[0]
+        # (the padded tensor dimension) instead, consistent with full_graph_pa and
+        # update_graph_params which both use num_tokens_padded.
+        # On v0.19.0 the two values are always equal, so the original key is kept.
+        if vllm_version_is("0.19.0"):
+            graph_params_key = attn_metadata.actual_seq_lengths_q[-1]
+        else:
+            graph_params_key = query.shape[0]
         num_tokens = attn_metadata.actual_seq_lengths_q[-1]
         if _EXTRA_CTX.is_draft_model:
             graph_params = get_draft_graph_params()
@@ -559,7 +570,7 @@ class AscendAttentionBackendImpl(AttentionImpl):
         # TODO: Refactor this to step-level instead of layer-level
 
         # Get workspace from cache or calculate it if not present.
-        workspace = graph_params.workspaces.get(num_tokens)
+        workspace = graph_params.workspaces.get(graph_params_key)
         softmax_lse = torch.empty(1, dtype=query.dtype, device=query.device)
         if workspace is None:
             workspace = torch_npu._npu_fused_infer_attention_score_get_max_workspace(
@@ -578,9 +589,9 @@ class AscendAttentionBackendImpl(AttentionImpl):
                 scale=self.scale,
             )
             if _EXTRA_CTX.is_draft_model:
-                update_draft_graph_params_workspaces(num_tokens, workspace)
+                update_draft_graph_params_workspaces(graph_params_key, workspace)
             else:
-                update_graph_params_workspaces(num_tokens, workspace)
+                update_graph_params_workspaces(graph_params_key, workspace)
 
         # Handle graph capturing mode
         stream = torch_npu.npu.current_stream()
@@ -588,8 +599,12 @@ class AscendAttentionBackendImpl(AttentionImpl):
         event = torch.npu.ExternalEvent()
         event.wait(stream)
         event.reset(stream)
-        graph_params.events[num_tokens].append(event)
-        graph_params.attn_params[num_tokens].append(
+        if graph_params_key not in graph_params.events:
+            graph_params.events[graph_params_key] = []
+            graph_params.attn_params[graph_params_key] = []
+            graph_params.handles[graph_params_key] = []
+        graph_params.events[graph_params_key].append(event)
+        graph_params.attn_params[graph_params_key].append(
             (
                 weak_ref_tensors(query),
                 weak_ref_tensors(key),
@@ -629,7 +644,7 @@ class AscendAttentionBackendImpl(AttentionImpl):
         output = output.view(num_tokens, self.num_heads, self.head_size)
 
         handle = torch.npu.graph_task_group_end(stream)
-        graph_params.handles[num_tokens].append(handle)
+        graph_params.handles[graph_params_key].append(handle)
         return output, num_tokens
 
     def full_graph_pa(
