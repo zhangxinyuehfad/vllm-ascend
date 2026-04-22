@@ -329,7 +329,7 @@ Since our script is Kubernetes-friendly, we need to actively pass in some cluste
     - Install AISBench on the first host(leader node) in cluster_hosts
 
       ``` bash
-      export AIS_BENCH_TAG="v3.1-20260330-master"
+      export AIS_BENCH_TAG="v3.1-20260415-master"
       export AIS_BENCH_URL="https://github.com/AISBench/benchmark.git"
       export BENCHMARK_HOME=/vllm-workspace/benchmark
 
