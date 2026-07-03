@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import torch
 import torch.nn as nn
@@ -16,10 +16,12 @@ class TestAscendW4A16MXFP4MoEMethod(TestBase):
     @patch("vllm_ascend.quantization.methods.w4a16_mxfp4.ensure_mxfp4_moe_available")
     @patch("vllm_ascend.quantization.methods.w4a16_mxfp4.get_current_vllm_config")
     @patch("vllm_ascend.quantization.methods.w4a16_mxfp4.get_ascend_config")
-    def setUp(self, mock_ascend, mock_vllm, mock_ensure):
+    @patch("vllm_ascend.quantization.methods.w4a16_mxfp4.get_ep_group")
+    def setUp(self, mock_ep_group, mock_ascend, mock_vllm, mock_ensure):
         mock_vllm.return_value = create_mock_vllm_config()
         mock_ascend.return_value = create_mock_ascend_config()
         mock_ensure.return_value = None
+        mock_ep_group.return_value = Mock()
         self.scheme = AscendW4A16MXFP4FusedMoEMethod()
 
     def test_get_weight_static_method(self):
@@ -42,7 +44,11 @@ class TestAscendW4A16MXFP4MoEMethod(TestBase):
             self.assertEqual(result["w13_weight_scale"].dtype, torch.uint8)
             self.assertEqual(result["w2_weight_scale"].dtype, torch.uint8)
 
-    def test_process_weights_transposes_weights(self):
+    @patch("torch_npu.npu_convert_weight_to_int4pack")
+    @patch("torch_npu.npu_format_cast")
+    def test_process_weights_transposes_weights(self, mock_format_cast, mock_convert_weight):
+        mock_format_cast.side_effect = lambda t, *a, **kw: t
+        mock_convert_weight.side_effect = lambda t: t.contiguous()
         layer = nn.Module()
         layer.w13_weight = nn.Parameter(torch.randint(0, 255, (8, 256, 64), dtype=torch.uint8), requires_grad=False)
         layer.w2_weight = nn.Parameter(torch.randint(0, 255, (8, 128, 128), dtype=torch.uint8), requires_grad=False)
@@ -51,7 +57,9 @@ class TestAscendW4A16MXFP4MoEMethod(TestBase):
         )
         layer.w2_weight_scale = nn.Parameter(torch.randint(0, 255, (8, 128, 8), dtype=torch.uint8), requires_grad=False)
         self.scheme.process_weights_after_loading(layer)
-        self.assertEqual(layer.w13_weight.shape, (8, 128, 32))
+        self.assertEqual(layer.w13_weight.shape, (8, 128, 256))
         self.assertEqual(layer.w13_weight_scale.shape, (8, 4, 256))
-        self.assertEqual(layer.w2_weight.shape, (8, 256, 16))
+        self.assertEqual(layer.w2_weight.shape, (8, 256, 128))
         self.assertEqual(layer.w2_weight_scale.shape, (8, 8, 128))
+        self.assertEqual(layer.w13_weight.dtype, torch.float32)
+        self.assertEqual(layer.w2_weight.dtype, torch.float32)
