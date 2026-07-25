@@ -69,8 +69,8 @@ import vllm_ascend.patch.worker.patch_v2.patch_block_table  # noqa
 import vllm_ascend.patch.worker.patch_v2.patch_attn_utils  # noqa
 
 # MRV2 speculative decoding currently tracks only the verified vLLM main
-# commit. Keep its main-only imports unreachable on the v0.25.1 release lane.
-if not vllm_version_is("0.25.1"):
+# commit. Keep its main-only imports unreachable on the v0.26.0 release lane.
+if not vllm_version_is("0.26.0"):
     import vllm_ascend.patch.worker.patch_v2.patch_eagle_speculator  # noqa
     import vllm_ascend.patch.worker.patch_v2.patch_dflash_speculator  # noqa
 

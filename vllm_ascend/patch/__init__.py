@@ -745,8 +745,8 @@
 #
 # ** 9. File: worker/patch_idex_310.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   1. `vllm.model_executor.layers.fla.ops.index.prepare_chunk_indices`
-#      `vllm.model_executor.layers.fla.ops.index.prepare_chunk_offsets`
+#   1. `vllm.third_party.flash_linear_attention.ops.index.prepare_chunk_indices`
+#      `vllm.third_party.flash_linear_attention.ops.index.prepare_chunk_offsets`
 #    Why:
 #       310P uses Ascend-friendly chunk index helpers for Qwen GDN prefill.
 #    How:
@@ -1066,7 +1066,7 @@
 #
 # ** 24. File: worker/patch_triton.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   1. `vllm.model_executor.layers.mamba.ops`, `vllm.model_executor.layers.fla.ops`,
+#   1. `vllm.model_executor.layers.mamba.ops`, `vllm.third_party.flash_linear_attention.ops`,
 #      `vllm.v1.worker.gpu.sample.gumbel.gumbel_sample`
 #    Why:
 #       triton ops in vLLM perform not good on NPU. And there is no dispatch mechanism for triton ops.
@@ -1225,7 +1225,7 @@
 #      and the vLLM processor lazy registry
 #    Why:
 #       The supported vLLM refs currently straddle the HunyuanVL processor
-#       cleanup. v0.25.1 still bundles the processor and retains stale
+# cleanup. v0.26.0 still bundles the processor and retains stale
 #       lazy-registry entries, while the verified main ref uses the native
 #       Transformers processor and has the upstream registry cleanup.
 #    How:
