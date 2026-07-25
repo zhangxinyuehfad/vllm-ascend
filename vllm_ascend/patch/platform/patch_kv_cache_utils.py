@@ -42,7 +42,8 @@ def _ascend_resolve_kv_cache_block_sizes(
 
     if len(groups) <= 1:
         bs = cache_config.block_size * dcp * pcp
-        return bs, bs
+        hash_bs = cache_config.block_size * dcp
+        return bs, hash_bs
 
     if dcp != 1 or pcp != 1:
         # Ascend supports CP with multiple KV cache groups; compute
