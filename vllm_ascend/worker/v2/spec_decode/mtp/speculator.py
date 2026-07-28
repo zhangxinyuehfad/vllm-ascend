@@ -23,6 +23,7 @@
 from contextlib import contextmanager
 from typing import Any
 
+import torch
 import vllm.v1.worker.gpu.spec_decode.speculator as _upstream_speculator
 from vllm.v1.worker.gpu.spec_decode.mtp.speculator import MTPSpeculator
 
@@ -76,6 +77,8 @@ class AscendMTPSpeculator(AscendAutoRegressiveSpeculator, MTPSpeculator):
         num_reqs: int,
         num_reqs_padded: int,
         num_tokens_padded: int,
+        seq_lens_cpu_upper_bound: torch.Tensor | None = None,
+        step: int = 1,
         num_query_per_req: int = 1,
         causal: bool = True,
     ) -> dict[str, Any] | None:
@@ -85,5 +88,11 @@ class AscendMTPSpeculator(AscendAutoRegressiveSpeculator, MTPSpeculator):
         # positions[:num_tokens_padded] and reuse super() (no arg duplication).
         with build_position_wrapper(self.input_buffers.positions, num_tokens_padded):
             return super()._build_draft_attn_metadata(
-                num_reqs, num_reqs_padded, num_tokens_padded, num_query_per_req, causal
+                num_reqs,
+                num_reqs_padded,
+                num_tokens_padded,
+                seq_lens_cpu_upper_bound,
+                step,
+                num_query_per_req,
+                causal,
             )

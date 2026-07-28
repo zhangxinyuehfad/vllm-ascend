@@ -275,6 +275,7 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
         skip_attn: bool,
         batch_desc: BatchExecutionDescriptor,
         num_tokens_across_dp: torch.Tensor | None,
+        seq_lens_cpu_upper_bound: torch.Tensor | None = None,
     ) -> None:
         """Minimal override to handle the merged multi-step graph in FULL mode.
 
@@ -288,7 +289,7 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
             assert self.decode_cudagraph_manager is not None
             self.decode_cudagraph_manager.run_fullgraph(batch_desc)
             return
-        super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp)
+        super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
 
     def _build_draft_attn_metadata(
         self,
@@ -302,6 +303,8 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
             num_reqs,
             num_reqs_padded,
             num_tokens_padded,
+            seq_lens_cpu_upper_bound,
+            step,
             num_query_per_req,
             causal,
         )
