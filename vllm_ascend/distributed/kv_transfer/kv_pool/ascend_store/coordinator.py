@@ -17,7 +17,7 @@ from vllm.v1.kv_cache_interface import (
 )
 
 from vllm_ascend.distributed.kv_transfer.kv_pool.ascend_store.config_data import (
-    _block_hash_to_bytes,
+    block_hash_to_bytes,
 )
 
 _CACHE_MISSING = object()

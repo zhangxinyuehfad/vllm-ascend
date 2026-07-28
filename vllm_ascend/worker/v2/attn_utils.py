@@ -45,7 +45,7 @@ from vllm_ascend.attention.attention_v1 import AscendAttentionState
 from vllm_ascend.attention.utils import AscendCommonAttentionMetadata
 from vllm_ascend.core.kv_cache_interface import AscendMLAAttentionSpec
 from vllm_ascend.quantization.utils import enable_fa_quant
-from vllm_ascend.utils import calc_split_factor, vllm_version_is
+from vllm_ascend.utils import calc_split_factor
 
 _ATTENTION_MASK_BUILDER = None
 

@@ -248,7 +248,6 @@ def test_dspark_spec_decoding(
     assert match, f"acceptance_per_pos {acceptance_per_pos} does not match golden {golden}"
 
 
-@_SKIP_V025_MRV2_SPEC_DECODE
 @pytest.mark.parametrize("model", MTP_MODELS)
 @pytest.mark.parametrize("max_tokens", [32])
 @pytest.mark.parametrize("enforce_eager", [True])

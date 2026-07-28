@@ -296,6 +296,8 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
         num_reqs: int,
         num_reqs_padded: int,
         num_tokens_padded: int,
+        seq_lens_cpu_upper_bound: torch.Tensor,
+        step: int,
         num_query_per_req: int = 1,
         causal: bool = True,
     ) -> dict[str, Any] | None:
