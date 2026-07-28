@@ -90,6 +90,7 @@ class AscendDSparkSpeculator(DSparkSpeculator):
 
     def build_draft_attn_metadatas(self, num_reqs_padded, seq_lens_cpu_upper_bound):
         num_tokens_padded = num_reqs_padded * self.num_query_per_req
+        assert self.input_batch is not None
         with build_attn_metadata_wrapper():
             attn_metadata = self._build_draft_attn_metadata(
                 num_reqs=self.input_batch.num_reqs,

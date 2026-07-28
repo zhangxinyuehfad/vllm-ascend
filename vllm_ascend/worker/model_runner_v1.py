@@ -159,7 +159,6 @@ from vllm_ascend.utils import (
     get_c_env,
     global_stream,
     is_hidden_state_cache_spec,
-    is_hierarchical_communication_enabled,
     kv_cache_spec_uses_sparse_sfa_c8,
     lmhead_tp_enable,
     oproj_tp_enable,
