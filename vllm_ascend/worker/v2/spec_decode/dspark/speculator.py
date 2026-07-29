@@ -88,14 +88,23 @@ class AscendDSparkSpeculator(DSparkSpeculator):
         num_tokens_padded = num_reqs_padded * self.num_query_per_req
         assert self.input_batch is not None
         with build_attn_metadata_wrapper():
-            attn_metadata = self._build_draft_attn_metadata(
-                num_reqs=self.input_batch.num_reqs,
-                num_reqs_padded=num_reqs_padded,
-                num_tokens_padded=num_tokens_padded,
-                seq_lens_cpu_upper_bound=seq_lens_cpu_upper_bound,
-                step=self.num_query_per_req,
-                causal=self._group_causal,
-            )
+            if vllm_version_is("0.26.0"):
+                attn_metadata = self._build_draft_attn_metadata(
+                    num_reqs=self.input_batch.num_reqs,
+                    num_reqs_padded=num_reqs_padded,
+                    num_tokens_padded=num_tokens_padded,
+                    step=self.num_query_per_req,
+                    causal=self._group_causal,
+                )
+            else:
+                attn_metadata = self._build_draft_attn_metadata(
+                    num_reqs=self.input_batch.num_reqs,
+                    num_reqs_padded=num_reqs_padded,
+                    num_tokens_padded=num_tokens_padded,
+                    seq_lens_cpu_upper_bound=seq_lens_cpu_upper_bound,
+                    step=self.num_query_per_req,
+                    causal=self._group_causal,
+                )
         return [attn_metadata]
 
     def propose(

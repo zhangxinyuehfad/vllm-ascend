@@ -35,6 +35,7 @@ from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import AutoRegress
 from vllm.v1.worker.utils import AttentionGroup
 
 from vllm_ascend.attention.attention_v1 import AscendAttentionState
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2.attn_utils import build_attn_metadata_wrapper
 from vllm_ascend.worker.v2.input_batch import AscendInputBuffers
 
@@ -289,7 +290,10 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
             assert self.decode_cudagraph_manager is not None
             self.decode_cudagraph_manager.run_fullgraph(batch_desc)
             return
-        super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
+        if vllm_version_is("0.26.0"):
+            super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp)
+        else:
+            super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
 
     def _build_draft_attn_metadata(
         self,
