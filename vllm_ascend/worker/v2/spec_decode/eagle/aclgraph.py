@@ -111,10 +111,7 @@ class EagleAclGraphManager(SpeculatorCudaGraphManager):
                     attn_groups,
                     kv_cache_config,
                 )
-                if vllm_version_is("0.25.1"):
-                    seq_lens_cpu_upper_bound = None
-                else:
-                    seq_lens_cpu_upper_bound = input_buffers.seq_lens_cpu[:num_reqs]
+                seq_lens_cpu_upper_bound = input_buffers.seq_lens_cpu[:num_reqs]
                 return lambda cg_mode: forward_fn(
                     num_reqs,
                     cg_mode == CUDAGraphMode.PIECEWISE,

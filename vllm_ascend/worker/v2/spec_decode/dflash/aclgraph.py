@@ -31,19 +31,12 @@ class DFlashAclGraphManager(DFlashCudaGraphManager):
         cudagraph_mode: CUDAGraphMode,
         decode_query_len: int,
         speculator: Any = None,
-        # vllm v0.26.0 passes ``causal=self.dflash_causal`` here while the
-        # vllm main branch removed it from ``init_cudagraph_manager`` and moved
-        # it into ``capture()`` instead. Accepting ``causal`` via ``**kwargs``
-        # keeps us compatible with both pinned versions; it is simply forwarded
-        # to the upstream ``__init__`` which only consumes it on v0.26.0.
-        **kwargs: Any,
     ):
         super().__init__(
             vllm_config,
             device,
             cudagraph_mode,
             decode_query_len,
-            **kwargs,
         )
 
         # It is set by AscendDFlashSpeculator.init_cudagraph_manager after creation,

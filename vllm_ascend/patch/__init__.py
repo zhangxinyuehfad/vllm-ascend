@@ -945,31 +945,7 @@
 #    Future Plan:
 #       Remove this patch when vllm-ascend supports pattern matching for ops.*.
 #
-# ** 18. File: hunyuan_vl_processor_compat.py**
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   1. `vllm.model_executor.models.hunyuan_vision.HunYuanVLProcessingInfo.get_hf_processor`
-#      and the vLLM processor lazy registry
-#    Why:
-#       The supported vLLM refs currently straddle the HunyuanVL processor
-#       migration. v0.23.0 still bundles the processor, while the verified
-#       main ref uses the Transformers-native processor but predates the full
-#       Transformers 5.13 registry and prompt-protocol cleanup.
-#    How:
-#       Preserve the bundled v0.23.0 processor protocol, translate its image
-#       processor registration to Transformers 5.13, and complete the native
-#       processor registry, loader, and tokenizer schema on the main ref.
-#    Related PR:
-#       1. https://github.com/vllm-project/vllm/pull/47872
-#       2. https://github.com/vllm-project/vllm/pull/47867
-#    Future Plan:
-#       Remove this patch and delete the `install_hunyuan_vl_processor_compat()`
-#       call from `vllm_ascend/__init__.py` only after both supported vLLM refs
-#       contain `4a6440acefbd4d977620bdb6dfb7fb325cd9bda7` (vLLM PR #47867,
-#       merged into vLLM main at 2026-07-11 07:56:14 UTC), or an equivalent
-#       fix, and the supported HunyuanOCR tokenizer artifacts expose the named
-#       special-token schema required by Transformers 5.13.
-#
-# ** 19. File: worker/patch_qwen3_next_mtp.py**
+# ** 18. File: worker/patch_qwen3_next_mtp.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.utils.bind_kv_cache`
 #    Why:
@@ -982,7 +958,7 @@
 #    Future Plan:
 #       Remove this patch after discussing with vllm community and adapting bind_kv_cache to npu.
 #
-# ** 20. File: worker/patch_qwen3vl.py**
+# ** 19. File: worker/patch_qwen3vl.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.model_executor.models.qwen3_vl.Qwen3VLForConditionalGeneration._get_deepstack_input_embeds`
 #    Why:
@@ -1013,7 +989,7 @@
 #    Future Plan:
 #       Remove this patch when vllm-ascend supports pattern matching for this fused kernel.
 #
-# ** 21. File: worker/patch_rejection_sampler.py**
+# ** 20. File: worker/patch_rejection_sampler.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.sample.rejection_sampler`
 #    Why:
@@ -1028,7 +1004,7 @@
 #           to override them, then delete the patch file `worker/patch_rejection_sampler.py`.
 #       2. make these functions as costom op, then remove AscendRejectionSampler
 #
-# ** 22. File: worker/patch_routed_experts_capture.py**
+# ** 21. File: worker/patch_routed_experts_capture.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.model_executor.layers.fused_moe.routed_experts_capturer.RoutedExpertsCapturer.capture`
 #    Why:
@@ -1047,7 +1023,7 @@
 #       Remove this patch when upstream vLLM supports MoE communication type abstraction that
 #       can be extended by hardware plugins like vllm-ascend.
 #
-# ** 23. File: worker/patch_step3p5.py**
+# ** 22. File: worker/patch_step3p5.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.model_executor.models.step3p5.Step3p5Attention.forward`
 #    Why:
@@ -1064,7 +1040,7 @@
 #       Remove this patch once torch.compile fully supports matching pattern from
 #       op's params.
 #
-# ** 24. File: worker/patch_triton.py**
+# ** 23. File: worker/patch_triton.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.model_executor.layers.mamba.ops`, `vllm.third_party.flash_linear_attention.ops`,
 #      `vllm.v1.worker.gpu.sample.gumbel.gumbel_sample`
@@ -1094,7 +1070,7 @@
 #       Remove this patch when torch_npu's Triton includes
 #       next_power_of_2 or when vLLM no longer calls triton.next_power_of_2.
 #
-# ** 25. File: worker/patch_v2/patch_attn_utils.py**
+# ** 24. File: worker/patch_v2/patch_attn_utils.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.attn_utils.get_kv_cache_spec`
 #    Why:
@@ -1113,7 +1089,7 @@
 #       Remove this patch once upstream adds a backend hook for KV cache spec
 #       construction or v2 worker no longer depends on the shared v1 helper.
 #
-# ** 26. File: worker/patch_v2/patch_block_table.py**
+# ** 25. File: worker/patch_v2/patch_block_table.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.block_table.BlockTables`
 #    Why:
@@ -1126,7 +1102,7 @@
 #       remove this patch when vLLM-ascend's BlockTables can initialize
 #       slot mapping as torch.int64 dtype.
 #
-# ** 27. File: worker/patch_v2/patch_dflash_speculator.py**
+# ** 26. File: worker/patch_v2/patch_dflash_speculator.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.spec_decode.dflash.speculator.DFlashCudaGraphManager`
 #    Why:
@@ -1141,7 +1117,7 @@
 #       Remove this patch once upstream exposes a backend-dispatchable spec-decode
 #       graph manager abstraction.
 #
-# ** 28. File: worker/patch_v2/patch_eagle_speculator.py**
+# ** 27. File: worker/patch_v2/patch_eagle_speculator.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.spec_decode.autoregressive.speculator.PrefillSpeculatorCudaGraphManager`,
 #      `vllm.v1.worker.gpu.spec_decode.autoregressive.speculator.DecodeSpeculatorCudaGraphManager`
@@ -1158,7 +1134,7 @@
 #       Remove this patch once upstream exposes a backend-dispatchable spec-decode
 #       graph manager abstraction.
 #
-# ** 29. File: worker/patch_v2/patch_input_batch.py**
+# ** 28. File: worker/patch_v2/patch_input_batch.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.input_batch.InputBatch`
 #    Why:
@@ -1169,7 +1145,7 @@
 #    Future Plan:
 #       remove this patch when vLLM-ascend's make_dummy behavior aligns with vLLM.
 #
-# ** 30. File: worker/patch_v2/patch_model_state.py**
+# ** 29. File: worker/patch_v2/patch_model_state.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.model_states.default.init_model_state`
 #    Why:
@@ -1180,7 +1156,7 @@
 #    Future Plan:
 #       remove this when vllm-ascend's attention metadata is align with vllm.
 #
-# ** 31. File: worker/patch_v2/patch_triton.py**
+# ** 30. File: worker/patch_v2/patch_triton.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.sample.logprob`, `vllm.v1.worker.gpu.sample.penalties.apply_penalties`,
 #      `vllm.v1.worker.gpu.sample.gumbel.gumbel_sample`
@@ -1193,7 +1169,7 @@
 #    Future Plan:
 #       Remove this patch when vLLM support the dispatch function.
 #
-# ** 32. File: worker/patch_v2/patch_use_v2_model_runner.py**
+# ** 31. File: worker/patch_v2/patch_use_v2_model_runner.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.config.vllm.VllmConfig.use_v2_model_runner`
 #    Why:
@@ -1209,7 +1185,7 @@
 #       Remove this module together with the platform patch once vllm-ascend
 #       fully supports the v2 model runner.
 #
-# ** 33. File: worker/patch_v2/patch_uva.py**
+# ** 32. File: worker/patch_v2/patch_uva.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.states.UvaBuffer`
 #    Why:
@@ -1218,26 +1194,3 @@
 #       make UvaBuffer a dummy class, mimic the interface of vllm UvaBuffer.
 #    Future Plan:
 #       Remove this patch when NPU support UVA.
-#
-# ** 36. File: hunyuan_vl_processor_compat.py**
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   1. `vllm.model_executor.models.hunyuan_vision.HunYuanVLProcessingInfo.get_hf_processor`
-#      and the vLLM processor lazy registry
-#    Why:
-#       The supported vLLM refs currently straddle the HunyuanVL processor
-# cleanup. v0.26.0 still bundles the processor and retains stale
-#       lazy-registry entries, while the verified main ref uses the native
-#       Transformers processor and has the upstream registry cleanup.
-#    How:
-#       Normalize the processor registry, loader, and tokenizer schema on both
-#       refs, and preserve the correct image-token protocol for each lane.
-#    Related PR:
-#       1. https://github.com/vllm-project/vllm/pull/47872
-#       2. https://github.com/vllm-project/vllm/pull/47867
-#    Future Plan:
-#       Remove this patch and delete the `install_hunyuan_vl_processor_compat()`
-#       call from `vllm_ascend/__init__.py` only after both supported vLLM refs
-#       contain `4a6440acefbd4d977620bdb6dfb7fb325cd9bda7` (vLLM PR #47867,
-#       merged into vLLM main at 2026-07-11 07:56:14 UTC), or an equivalent
-#       fix, and the supported HunyuanOCR tokenizer artifacts expose the named
-#       special-token schema required by Transformers 5.13.

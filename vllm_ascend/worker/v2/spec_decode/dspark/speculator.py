@@ -37,11 +37,7 @@ class AscendDSparkSpeculator(DSparkSpeculator):
 
     def __init__(self, vllm_config: VllmConfig, device: torch.device):
         super().__init__(vllm_config, device)
-        # TODO: Remove the if not vllm_version_is guard when dropping v0.25.1.
-        # input_batch is cached in propose() so that DFlashAclGraphManager
-        # can access seq_lens_cpu_upper_bound during full-graph replay.
-        if not vllm_version_is("0.25.1"):
-            self.input_batch: InputBatch | None = None
+        self.input_batch: InputBatch | None = None
 
         # we need to update full graph params in run_fullgraph,
         # so create a stream to update full graph params.
