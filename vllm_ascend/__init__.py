@@ -42,10 +42,13 @@ if os.getenv("VLLM_VERSION", "") != "0.26.0":
     # without breaking on triton-ascend 3.2.1. Skip if triton is not
     # installed at all (e.g. 310P or CPU-UT environments).
     if _triton_available:
-        import triton.language.core as _tl_core
-
-        if not hasattr(_tl_core, "_aggregate"):
-            _tl_core._aggregate = lambda *a, **kw: None
+        try:
+            import triton.language.core as _tl_core
+        except Exception:
+            pass
+        else:
+            if not hasattr(_tl_core, "_aggregate"):
+                _tl_core._aggregate = lambda *a, **kw: None
 
 _GLOBAL_PATCH_APPLIED = False
 
