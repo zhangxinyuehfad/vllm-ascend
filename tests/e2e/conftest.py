@@ -49,6 +49,25 @@ from requests.exceptions import RequestException
 from torch import nn
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, BatchEncoding, BatchFeature
 from transformers.models.auto.auto_factory import _BaseAutoModelClass
+
+# main2main compatibility: stub triton modules/symbols that vllm main
+# requires but triton-ascend 3.2.1 does not provide. Gated on
+# VLLM_VERSION != "0.26.0" to mirror vllm_ascend.utils.vllm_version_is
+# without triggering the vllm import cycle.
+if os.getenv("VLLM_VERSION") != "0.26.0":
+    from types import ModuleType
+
+    for _gluon_stub in (
+            "triton.experimental.gluon",
+            "triton.experimental.gluon.language",
+    ):
+        if _gluon_stub not in sys.modules:
+            sys.modules[_gluon_stub] = ModuleType(_gluon_stub)
+
+    import triton.language.core as _tl_core
+    if not hasattr(_tl_core, "_aggregate"):
+        _tl_core._aggregate = lambda *a, **kw: None
+
 from vllm import LLM, SamplingParams
 from vllm.config.model import ConvertOption, RunnerOption, _get_and_verify_dtype
 from vllm.inputs import TextPrompt
