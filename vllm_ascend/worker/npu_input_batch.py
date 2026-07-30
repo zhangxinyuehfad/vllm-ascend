@@ -32,6 +32,11 @@ from vllm_ascend.worker.block_table import MultiGroupBlockTable
 
 
 class NPUInputBatch(InputBatch):
+    # main2main compat: `use_replayssm` and `slot_mapping_modes` were
+    # added to upstream InputBatch.__init__() in vllm main after 0.26.0.
+    # NPU does not implement Mamba replay-SSM, so the kwargs are only
+    # accepted for interface alignment.
+    # Remove the version gate once 0.26.0 support is dropped.
     def __init__(
         self,
         max_num_reqs: int,
@@ -50,14 +55,11 @@ class NPUInputBatch(InputBatch):
         num_speculative_tokens: int = 0,
         cp_kv_cache_interleave_size: int = 1,
         kv_cache_groups: list[KVCacheGroupSpec] | None = None,
-        use_replayssm: bool = False,  # main2main compat: added upstream post-0.26.0
-        slot_mapping_modes: list | None = None,  # main2main compat: added upstream post-0.26.0
+        use_replayssm: bool = False,
+        slot_mapping_modes: list | None = None,
     ):
-        # main2main compat: `use_replayssm` and `slot_mapping_modes` were
-        # added to upstream InputBatch.__init__() in vllm main after 0.26.0.
-        # NPU does not implement Mamba replay-SSM, so we only accept the
-        # kwargs to keep the interface aligned. Remove this version gate once
-        # 0.26.0 support is dropped.
+        # main2main compat: only store the new upstream kwargs when
+        # running against vllm main (post-0.26.0).
         if not vllm_version_is("0.26.0"):
             self.use_replayssm = use_replayssm
             self.slot_mapping_modes = slot_mapping_modes
@@ -146,7 +148,9 @@ class NPUInputBatch(InputBatch):
         self.random_reqs: set[str] = set()
 
         self.top_p = torch.empty((max_num_reqs,), dtype=torch.float32, device=device)
-        self.top_p_cpu_tensor = torch.empty((max_num_reqs,), dtype=torch.float32, device="cpu", pin_memory=pin_memory)
+        self.top_p_cpu_tensor = torch.empty(
+            (max_num_reqs,), dtype=torch.float32, device="cpu", pin_memory=pin_memory
+        )
         self.top_p_cpu = self.top_p_cpu_tensor.numpy()
         self.top_p_reqs: set[str] = set()
 
