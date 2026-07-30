@@ -15,8 +15,11 @@
 # This file is a part of the vllm-ascend project.
 #
 
+import importlib.util
 import os
 import sys
+
+_triton_available = importlib.util.find_spec("triton") is not None
 
 # main2main compatibility: stub triton.experimental.gluon modules that
 # vllm main requires but triton-ascend 3.2.1 does not provide. Runs at
@@ -36,11 +39,13 @@ if os.getenv("VLLM_VERSION", "") != "0.26.0":
 
     # main2main compat: `_aggregate` was added to triton.language.core in
     # vllm main post-0.26.0. Stub it here so vllm.triton_utils can import it
-    # without breaking on triton-ascend 3.2.1.
-    import triton.language.core as _tl_core
+    # without breaking on triton-ascend 3.2.1. Skip if triton is not
+    # installed at all (e.g. 310P or CPU-UT environments).
+    if _triton_available:
+        import triton.language.core as _tl_core
 
-    if not hasattr(_tl_core, "_aggregate"):
-        _tl_core._aggregate = lambda *a, **kw: None
+        if not hasattr(_tl_core, "_aggregate"):
+            _tl_core._aggregate = lambda *a, **kw: None
 
 _GLOBAL_PATCH_APPLIED = False
 
