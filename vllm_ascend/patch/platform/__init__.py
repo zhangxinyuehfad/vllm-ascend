@@ -15,6 +15,22 @@
 # limitations under the License.
 
 import os
+import sys
+
+# main2main compatibility: stub triton gluon modules that vllm main
+# requires but triton-ascend 3.2.1 does not provide. Runs at vllm.platforms
+# initialization (triggered from vllm.triton_utils.importing), which precedes
+# any triton import in the same process - including subprocesses such as
+# `python -m vllm.model_executor.models.registry`.
+if os.getenv("VLLM_VERSION", "") != "0.26.0":
+    from types import ModuleType
+
+    for _gluon_stub in (
+            "triton.experimental.gluon",
+            "triton.experimental.gluon.language",
+    ):
+        if _gluon_stub not in sys.modules:
+            sys.modules[_gluon_stub] = ModuleType(_gluon_stub)
 
 import vllm_ascend.patch.platform.patch_camem_allocator  # noqa
 import vllm_ascend.patch.platform.patch_distributed  # noqa

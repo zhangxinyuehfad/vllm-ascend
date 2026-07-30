@@ -26,7 +26,7 @@ from vllm.distributed.parallel_state import GroupCoordinator, _get_unique_name, 
 
 from vllm_ascend.distributed.device_communicators.npu_communicator import NPUCommunicator
 from vllm_ascend.patch.worker._hccl_pg_registry import HcclPgKey, HcclPgRegistry, make_hccl_pg_key
-from vllm_ascend.utils import create_hccl_pg_options
+from vllm_ascend.utils import create_hccl_pg_options, vllm_version_is
 
 _HCCL_PG_REGISTRY = HcclPgRegistry()
 logger = logging.getLogger(__name__)
@@ -106,7 +106,16 @@ class GroupCoordinatorPatch(GroupCoordinator):
         use_device_communicator: bool,  # whether to use device communicator
         use_message_queue_broadcaster: bool = False,
         group_name: str | None = None,
+        use_all2all: bool = False,
     ):
+        # main2main compat: `use_all2all` was added to upstream
+        # GroupCoordinator.__init__() in vllm main after 0.26.0. Ascend NPU
+        # has no all2all implementation, so we only accept the kwarg to keep
+        # the interface aligned. Remove this version gate once 0.26.0 support
+        # is dropped.
+        if not vllm_version_is("0.26.0"):
+            self.use_all2all = use_all2all
+
         group_name = group_name or "anonymous"
         self.unique_name = _get_unique_name(group_name)
         _register_group(self)
