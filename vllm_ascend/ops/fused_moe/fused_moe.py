@@ -36,6 +36,7 @@ from vllm_ascend.utils import (
     npu_stream_switch,
     shared_expert_dp_enabled,
     shared_experts_calculation_stream,
+    vllm_version_is,
 )
 
 
@@ -213,15 +214,33 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
     def ep_rank(self) -> int:
         return self.moe_config.ep_rank
 
-    def _maybe_reduce_shared_expert_output(
-        self,
-        shared_output: torch.Tensor | None,
-    ) -> torch.Tensor | None:
-        # _forward_shared_experts already handles shared expert TP all-reduce
-        # for MC2/ALLTOALL/FUSED_MC2. For AllGather the reduction is done
-        # via _maybe_reduce_final_output on the combined (shared + routed)
-        # output. Skip any additional reduction here.
-        return shared_output
+
+    # main2main compat: `fused_output_is_reduced` was added to upstream
+    # _maybe_reduce_shared_expert_output() in vllm main after 0.26.0.
+    # Ascend already reduces shared expert output in
+    # _forward_shared_experts, so the parameter is accepted for
+    # interface alignment only.
+    # Remove the version gate once 0.26.0 support is dropped.
+    if vllm_version_is("0.26.0"):
+        def _maybe_reduce_shared_expert_output(
+            self,
+            shared_output: torch.Tensor | None,
+        ) -> torch.Tensor | None:
+            # _forward_shared_experts already handles shared expert TP
+            # all-reduce for MC2/ALLTOALL/FUSED_MC2. For AllGather the
+            # reduction is done via _maybe_reduce_final_output on the
+            # combined (shared + routed) output.
+            return shared_output
+    else:
+        def _maybe_reduce_shared_expert_output(
+            self,
+            shared_output: torch.Tensor | None,
+            fused_output_is_reduced: bool | None = None,
+        ) -> torch.Tensor | None:
+            # Ascend handles shared expert reduction in
+            # _forward_shared_experts; the upstream kwarg is unused here.
+            _ = fused_output_is_reduced
+            return shared_output
 
     def _maybe_reduce_final_output(
         self,
