@@ -110,6 +110,7 @@ class GroupCoordinatorPatch(GroupCoordinator):
     # the interface aligned.
     # Remove the version gate once 0.26.0 support is dropped.
     if _IS_VLLM_026:
+
         def __init__(
             self,
             group_ranks: list[list[int]],
@@ -161,6 +162,7 @@ class GroupCoordinatorPatch(GroupCoordinator):
                     logger.exception("Failed to clean up partially initialized GroupCoordinatorPatch")
                 raise
     else:
+
         def __init__(
             self,
             group_ranks: list[list[int]],

@@ -31,8 +31,8 @@ if os.getenv("VLLM_VERSION", "") != "0.26.0":
     from types import ModuleType
 
     for _gluon_stub in (
-            "triton.experimental.gluon",
-            "triton.experimental.gluon.language",
+        "triton.experimental.gluon",
+        "triton.experimental.gluon.language",
     ):
         if _gluon_stub not in sys.modules:
             sys.modules[_gluon_stub] = ModuleType(_gluon_stub)
