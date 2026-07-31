@@ -234,7 +234,7 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
             return shared_output
     else:
 
-        def _maybe_reduce_shared_expert_output(
+        def _maybe_reduce_shared_expert_output(  # type: ignore[misc]
             self,
             shared_output: torch.Tensor | None,
             fused_output_is_reduced: bool | None = None,
@@ -260,7 +260,7 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
             return states[..., :trunc_size]
     else:
 
-        def _maybe_reduce_final_output(
+        def _maybe_reduce_final_output(  # type: ignore[misc]
             self,
             states: torch.Tensor,
             trunc_size: int | None,
