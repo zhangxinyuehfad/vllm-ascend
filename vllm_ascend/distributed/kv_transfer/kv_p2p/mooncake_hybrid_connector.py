@@ -1102,7 +1102,7 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
                 self.connector_worker = MooncakeConnectorWorker(vllm_config, str(self.engine_id), kv_cache_config)
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self, vllm_config: VllmConfig, role: KVConnectorRole, kv_cache_config: KVCacheConfig | None = None
         ):
             assert vllm_config.kv_transfer_config is not None
@@ -1111,10 +1111,10 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
             self._connector_metadata = MooncakeConnectorMetadata()
 
             if role == KVConnectorRole.SCHEDULER:
-                self.connector_scheduler: MooncakeConnectorScheduler | None = MooncakeConnectorScheduler(
+                self.connector_scheduler: MooncakeConnectorScheduler | None = MooncakeConnectorScheduler(  # type: ignore[no-redef]
                     vllm_config, str(self.engine_id), kv_cache_config
                 )
-                self.connector_worker: MooncakeConnectorWorker | None = None
+                self.connector_worker: MooncakeConnectorWorker | None = None  # type: ignore[no-redef]
             elif role == KVConnectorRole.WORKER:
                 self.connector_scheduler = None
                 self.connector_worker = MooncakeConnectorWorker(vllm_config, str(self.engine_id), kv_cache_config)
