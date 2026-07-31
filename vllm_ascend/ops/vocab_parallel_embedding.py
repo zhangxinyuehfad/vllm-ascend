@@ -296,7 +296,7 @@ class AscendParallelLMHead(ParallelLMHead):
                 self.register_parameter("bias", None)
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             num_embeddings: int,
             embedding_dim: int,

@@ -32,7 +32,7 @@ from vllm_ascend.utils import create_hccl_pg_options
 # main2main compat: mirror vllm_ascend.utils.vllm_version_is without
 # importing vllm_ascend (which pulls in vllm) so that CPU-UT tests that
 # load this module from source via `_load_module()` do not break.
-_IS_VLLM_026 = os.getenv("VLLM_VERSION", "0.26.0") == "0.26.0"
+_IS_VLLM_026 = os.getenv("VLLM_VERSION", "") == "0.26.0"
 
 _HCCL_PG_REGISTRY = HcclPgRegistry()
 logger = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class GroupCoordinatorPatch(GroupCoordinator):
                 raise
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             group_ranks: list[list[int]],
             local_rank: int,
@@ -183,10 +183,10 @@ class GroupCoordinatorPatch(GroupCoordinator):
             self.local_rank = local_rank
             self.torch_distributed_backend = torch_distributed_backend
             self.backend = _normalize_backend(torch_distributed_backend)
-            self._acquired_hccl_keys: list[HcclPgKey] = []
-            self._unshared_hccl_groups: list[object] = []
+            self._acquired_hccl_keys: list[HcclPgKey] = []  # type: ignore[no-redef]
+            self._unshared_hccl_groups: list[object] = []  # type: ignore[no-redef]
             self.use_device_communicator = use_device_communicator
-            self.device_communicator: NPUCommunicator | None = None
+            self.device_communicator: NPUCommunicator | None = None  # type: ignore[no-redef]
             self.mq_broadcaster = None
             self.cpu_group = None
             self.device_group = None

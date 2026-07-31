@@ -43,7 +43,7 @@ if os.getenv("VLLM_VERSION", "") != "0.26.0":
     # installed at all (e.g. 310P or CPU-UT environments).
     if _triton_available:
         try:
-            import triton.language.core as _tl_core
+            import triton.language.core as _tl_core  # type: ignore[import-untyped]
         except Exception:
             pass
         else:

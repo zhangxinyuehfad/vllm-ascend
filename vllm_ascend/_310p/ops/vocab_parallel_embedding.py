@@ -94,7 +94,7 @@ class AscendParallelLMHead310(AscendParallelLMHead):
                 self.quant_method = AscendUnquantizedEmbeddingMethod310()
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             num_embeddings: int,
             embedding_dim: int,
@@ -116,7 +116,7 @@ class AscendParallelLMHead310(AscendParallelLMHead):
                 padding_size,
                 quant_config,
                 prefix,
-                disable_tp=disable_tp,
+                disable_tp=disable_tp,  # type: ignore[call-arg]
             )
 
             if quant_config is None:
