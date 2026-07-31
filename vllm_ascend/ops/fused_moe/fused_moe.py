@@ -241,13 +241,35 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
             _ = fused_output_is_reduced
             return shared_output
 
-    def _maybe_reduce_final_output(
-        self,
-        states: torch.Tensor,
-        trunc_size: int,
-    ) -> torch.Tensor:
-        states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(states)
-        return states[..., :trunc_size]
+    # main2main compat: `output_is_reduced` was added to upstream
+    # _maybe_reduce_final_output() in vllm main after 0.26.0.
+    # Ascend already handles reduction in its own dispatch path, so
+    # the upstream kwarg is accepted for interface alignment only.
+    # Remove the version gate once 0.26.0 support is dropped.
+    if vllm_version_is("0.26.0"):
+        def _maybe_reduce_final_output(
+            self,
+            states: torch.Tensor,
+            trunc_size: int,
+        ) -> torch.Tensor:
+            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(
+                states
+            )
+            return states[..., :trunc_size]
+    else:
+        def _maybe_reduce_final_output(
+            self,
+            states: torch.Tensor,
+            trunc_size: int | None,
+            output_is_reduced: bool | None = None,
+        ) -> torch.Tensor:
+            _ = output_is_reduced
+            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(
+                states
+            )
+            if trunc_size is not None and trunc_size > 0:
+                return states[..., :trunc_size]
+            return states
 
     def set_lora_context(self, lora_context):
         self.routed_experts._ascend_moe_lora_context = lora_context
