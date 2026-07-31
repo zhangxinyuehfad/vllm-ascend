@@ -148,9 +148,7 @@ class NPUInputBatch(InputBatch):
         self.random_reqs: set[str] = set()
 
         self.top_p = torch.empty((max_num_reqs,), dtype=torch.float32, device=device)
-        self.top_p_cpu_tensor = torch.empty(
-            (max_num_reqs,), dtype=torch.float32, device="cpu", pin_memory=pin_memory
-        )
+        self.top_p_cpu_tensor = torch.empty((max_num_reqs,), dtype=torch.float32, device="cpu", pin_memory=pin_memory)
         self.top_p_cpu = self.top_p_cpu_tensor.numpy()
         self.top_p_reqs: set[str] = set()
 

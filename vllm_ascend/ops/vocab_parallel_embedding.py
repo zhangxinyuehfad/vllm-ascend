@@ -259,6 +259,7 @@ class AscendParallelLMHead(ParallelLMHead):
     # only accepted for interface alignment.
     # Remove the version gate once 0.26.0 support is dropped.
     if vllm_version_is("0.26.0"):
+
         def __init__(
             self,
             num_embeddings: int,
@@ -271,8 +272,14 @@ class AscendParallelLMHead(ParallelLMHead):
             prefix: str = "",
         ):
             AscendVocabParallelEmbedding.__init__(
-                self, num_embeddings, embedding_dim, params_dtype, org_num_embeddings,
-                padding_size, quant_config, prefix
+                self,
+                num_embeddings,
+                embedding_dim,
+                params_dtype,
+                org_num_embeddings,
+                padding_size,
+                quant_config,
+                prefix,
             )
 
             self.quant_config = quant_config
@@ -288,6 +295,7 @@ class AscendParallelLMHead(ParallelLMHead):
             else:
                 self.register_parameter("bias", None)
     else:
+
         def __init__(
             self,
             num_embeddings: int,
@@ -304,8 +312,14 @@ class AscendParallelLMHead(ParallelLMHead):
             self.disable_tp = disable_tp
 
             AscendVocabParallelEmbedding.__init__(
-                self, num_embeddings, embedding_dim, params_dtype, org_num_embeddings,
-                padding_size, quant_config, prefix
+                self,
+                num_embeddings,
+                embedding_dim,
+                params_dtype,
+                org_num_embeddings,
+                padding_size,
+                quant_config,
+                prefix,
             )
 
             self.quant_config = quant_config

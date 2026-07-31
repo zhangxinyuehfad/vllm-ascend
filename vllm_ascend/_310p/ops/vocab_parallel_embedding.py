@@ -67,6 +67,7 @@ class AscendParallelLMHead310(AscendParallelLMHead):
     # ParallelLMHead.__init__() in vllm main after 0.26.0.
     # Remove the version gate once 0.26.0 support is dropped.
     if vllm_version_is("0.26.0"):
+
         def __init__(
             self,
             num_embeddings: int,
@@ -79,13 +80,20 @@ class AscendParallelLMHead310(AscendParallelLMHead):
             prefix: str = "",
         ):
             super().__init__(
-                num_embeddings, embedding_dim, bias, params_dtype,
-                org_num_embeddings, padding_size, quant_config, prefix
+                num_embeddings,
+                embedding_dim,
+                bias,
+                params_dtype,
+                org_num_embeddings,
+                padding_size,
+                quant_config,
+                prefix,
             )
 
             if quant_config is None:
                 self.quant_method = AscendUnquantizedEmbeddingMethod310()
     else:
+
         def __init__(
             self,
             num_embeddings: int,
@@ -100,9 +108,15 @@ class AscendParallelLMHead310(AscendParallelLMHead):
             disable_tp: bool = False,
         ):
             super().__init__(
-                num_embeddings, embedding_dim, bias, params_dtype,
-                org_num_embeddings, padding_size, quant_config, prefix,
-                disable_tp=disable_tp
+                num_embeddings,
+                embedding_dim,
+                bias,
+                params_dtype,
+                org_num_embeddings,
+                padding_size,
+                quant_config,
+                prefix,
+                disable_tp=disable_tp,
             )
 
             if quant_config is None:
