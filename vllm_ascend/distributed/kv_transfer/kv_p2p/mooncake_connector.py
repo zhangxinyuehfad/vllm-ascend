@@ -1456,8 +1456,10 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
     # Scheduler.__init__() post-0.26.0).
     # Remove the version gate once 0.26.0 support is dropped.
     if vllm_version_is("0.26.0"):
-        def __init__(self, vllm_config: VllmConfig, role: KVConnectorRole,
-                     kv_cache_config: KVCacheConfig | None = None):
+
+        def __init__(
+            self, vllm_config: VllmConfig, role: KVConnectorRole, kv_cache_config: KVCacheConfig | None = None
+        ):
             assert vllm_config.kv_transfer_config is not None
             self.engine_id = vllm_config.kv_transfer_config.engine_id
             self._connector_metadata = MooncakeConnectorMetadata()
@@ -1469,12 +1471,12 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
                 self.connector_worker: MooncakeConnectorWorker | None = None
             elif role == KVConnectorRole.WORKER:
                 self.connector_scheduler = None
-                self.connector_worker = MooncakeConnectorWorker(
-                    vllm_config, str(self.engine_id), kv_cache_config
-                )
+                self.connector_worker = MooncakeConnectorWorker(vllm_config, str(self.engine_id), kv_cache_config)
     else:
-        def __init__(self, vllm_config: VllmConfig, role: KVConnectorRole,
-                     kv_cache_config: KVCacheConfig | None = None):
+
+        def __init__(
+            self, vllm_config: VllmConfig, role: KVConnectorRole, kv_cache_config: KVCacheConfig | None = None
+        ):
             assert vllm_config.kv_transfer_config is not None
             self._kv_transfer_config = vllm_config.kv_transfer_config
             self.engine_id = vllm_config.kv_transfer_config.engine_id
@@ -1487,9 +1489,7 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
                 self.connector_worker: MooncakeConnectorWorker | None = None
             elif role == KVConnectorRole.WORKER:
                 self.connector_scheduler = None
-                self.connector_worker = MooncakeConnectorWorker(
-                    vllm_config, str(self.engine_id), kv_cache_config
-                )
+                self.connector_worker = MooncakeConnectorWorker(vllm_config, str(self.engine_id), kv_cache_config)
 
     ############################################################
     # Scheduler Side Methods

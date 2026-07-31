@@ -222,6 +222,7 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
     # interface alignment only.
     # Remove the version gate once 0.26.0 support is dropped.
     if vllm_version_is("0.26.0"):
+
         def _maybe_reduce_shared_expert_output(
             self,
             shared_output: torch.Tensor | None,
@@ -232,6 +233,7 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
             # combined (shared + routed) output.
             return shared_output
     else:
+
         def _maybe_reduce_shared_expert_output(
             self,
             shared_output: torch.Tensor | None,
@@ -248,16 +250,16 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
     # the upstream kwarg is accepted for interface alignment only.
     # Remove the version gate once 0.26.0 support is dropped.
     if vllm_version_is("0.26.0"):
+
         def _maybe_reduce_final_output(
             self,
             states: torch.Tensor,
             trunc_size: int,
         ) -> torch.Tensor:
-            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(
-                states
-            )
+            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(states)
             return states[..., :trunc_size]
     else:
+
         def _maybe_reduce_final_output(
             self,
             states: torch.Tensor,
@@ -265,9 +267,7 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
             output_is_reduced: bool | None = None,
         ) -> torch.Tensor:
             _ = output_is_reduced
-            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(
-                states
-            )
+            states = torch.ops.vllm.maybe_all_reduce_tensor_model_parallel(states)
             if trunc_size is not None and trunc_size > 0:
                 return states[..., :trunc_size]
             return states
