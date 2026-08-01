@@ -322,7 +322,9 @@ class NPUWorker(WorkerBase):
 
         # state machine driven by start/finish.
         if not self._weight_update_active:
-            raise RuntimeError("start_weight_update must be called before update_weights.")
+            raise RuntimeError(
+                "start_weight_update must be called before update_weights."
+            )
 
         try:
             self.weight_transfer_engine.update_weights(update_info)

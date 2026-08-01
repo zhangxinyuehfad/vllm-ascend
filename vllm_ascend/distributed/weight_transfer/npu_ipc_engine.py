@@ -167,52 +167,52 @@ if vllm_version_is("0.26.0"):
             """No initialization needed for NPU IPC backend."""
             pass
 
-    def start_weight_update(self) -> None:
-        """Initialize layerwise reloading for the incoming checkpoint weights."""
-        from vllm.model_executor.model_loader.reload import (
-            initialize_layerwise_reload,
-        )
-
-        initialize_layerwise_reload(self.model)
-
-    def finish_weight_update(self) -> None:
-        """Finalize layerwise reloading after all weights have been received."""
-        from vllm.model_executor.model_loader.reload import (
-            finalize_layerwise_reload,
-        )
-
-        finalize_layerwise_reload(self.model, self.model_config)
-
-    def receive_weights(
-        self,
-        update_info: NPUIPCWeightTransferUpdateInfo,
-    ) -> None:
-        """Receive weights from the trainer via NPU IPC handles.
-
-        Args:
-            update_info: NPU IPC update info containing parameter names,
-                dtypes, shapes, and IPC handles.
-        """
-        device_index = self.device.index
-        physical_npu_id = npu_generate_uuid(device_index)
-
-        if update_info.packed:
-            assert update_info.tensor_sizes is not None
-            assert isinstance(update_info.ipc_handles, dict)
-            weights = packed_npu_ipc_consumer(
-                ipc_handle=update_info.ipc_handles,
-                physical_npu_id=physical_npu_id,
-                names=update_info.names,
-                shapes=update_info.shapes,
-                dtype_names=update_info.dtype_names,
-                tensor_sizes=update_info.tensor_sizes,
-                device_index=device_index,
+        def start_weight_update(self) -> None:
+            """Initialize layerwise reloading for the incoming checkpoint weights."""
+            from vllm.model_executor.model_loader.reload import (
+                initialize_layerwise_reload,
             )
-            self.model.load_weights(weights)
-        else:
-            # Lazy import: ``rebuild_npu_tensor`` lives in ``torch_npu`` and
-            # must not be imported at module load time on non-NPU hosts.
-            from torch_npu.multiprocessing.reductions import rebuild_npu_tensor
+
+            initialize_layerwise_reload(self.model)
+
+        def finish_weight_update(self) -> None:
+            """Finalize layerwise reloading after all weights have been received."""
+            from vllm.model_executor.model_loader.reload import (
+                finalize_layerwise_reload,
+            )
+
+            finalize_layerwise_reload(self.model, self.model_config)
+
+        def receive_weights(
+            self,
+            update_info: NPUIPCWeightTransferUpdateInfo,
+        ) -> None:
+            """Receive weights from the trainer via NPU IPC handles.
+
+            Args:
+                update_info: NPU IPC update info containing parameter names,
+                    dtypes, shapes, and IPC handles.
+            """
+            device_index = self.device.index
+            physical_npu_id = npu_generate_uuid(device_index)
+
+            if update_info.packed:
+                assert update_info.tensor_sizes is not None
+                assert isinstance(update_info.ipc_handles, dict)
+                weights = packed_npu_ipc_consumer(
+                    ipc_handle=update_info.ipc_handles,
+                    physical_npu_id=physical_npu_id,
+                    names=update_info.names,
+                    shapes=update_info.shapes,
+                    dtype_names=update_info.dtype_names,
+                    tensor_sizes=update_info.tensor_sizes,
+                    device_index=device_index,
+                )
+                self.model.load_weights(weights)
+            else:
+                # Lazy import: ``rebuild_npu_tensor`` lives in ``torch_npu`` and
+                # must not be imported at module load time on non-NPU hosts.
+                from torch_npu.multiprocessing.reductions import rebuild_npu_tensor
 
                 assert isinstance(update_info.ipc_handles, list)
                 weights = []
@@ -238,7 +238,7 @@ if vllm_version_is("0.26.0"):
                     weight = rebuild_npu_tensor(*list_args)
                     weights.append((name, weight))
 
-            self.model.load_weights(weights)
+                self.model.load_weights(weights)
 
         def shutdown(self) -> None:
             pass
@@ -571,7 +571,7 @@ else:
                     weight = rebuild_npu_tensor(*list_args)
                     weights.append((name, weight))
 
-            self.model.load_weights(weights)
+                self.model.load_weights(weights)
 
         def shutdown(self) -> None:
             pass

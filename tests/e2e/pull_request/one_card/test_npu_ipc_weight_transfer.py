@@ -164,15 +164,22 @@ def test_npu_ipc_weight_transfer_updates_server_weights():
                 WeightTransferTrainerFactory,
             )
 
+            from vllm_ascend.distributed.weight_transfer import register_engine
             from vllm_ascend.distributed.weight_transfer.npu_ipc_engine import (
                 NPUIPCTrainerInitInfo,
             )
 
-            client = HTTPVLLMWeightSyncClient(base_url=server.url_root)
+            register_engine()
+
+            # The lifecycle probe above left a weight update active; the
+            # stateful engine drives its own start/finish lifecycle, so close
+            # the probe's update first.
+            _post(server, "finish_weight_update")
+
             init_info = NPUIPCTrainerInitInfo(rank=0, packed=False)
             engine = WeightTransferTrainerFactory.trainer_init(
                 init_info,
-                client=client,
+                client=HTTPVLLMWeightSyncClient(base_url=server.url_root),
                 source=ModuleSource(train_model),
             )
             engine.send_weights()
