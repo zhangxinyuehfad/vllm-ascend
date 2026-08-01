@@ -40,7 +40,7 @@ class NPUIPCWeightTransferInitInfo(WeightTransferInitInfo):
     No initialization needed for NPU IPC.
     """
 
-    pass
+    packed: bool = False
 
 
 @lru_cache(maxsize=1)
@@ -435,6 +435,9 @@ if vllm_version_is("0.26.0"):
 else:
     from typing import ClassVar
 
+    from vllm.distributed.weight_transfer.base import (
+        TrainerWeightTransferEngine,
+    )
     from vllm.distributed.weight_transfer.ipc_engine import (
         IPCTrainerInitInfo,
         IPCTrainerWeightTransferEngine,
@@ -595,13 +598,12 @@ else:
             packed: bool = False,
             packed_buffer_size_bytes: int = DEFAULT_PACKED_BUFFER_SIZE_BYTES,
         ) -> None:
-            super().__init__(
-                client=client,
-                source=source,
-                is_sender=is_sender,
-                packed=packed,
-                packed_buffer_size_bytes=packed_buffer_size_bytes,
+            TrainerWeightTransferEngine.__init__(
+                self, client=client, source=source, is_sender=is_sender,
             )
+            self.packed = packed
+            self.packed_buffer_size_bytes = packed_buffer_size_bytes
+            self.device_index = torch.accelerator.current_device_index()
             self.npu_uuid = npu_generate_uuid()
 
         @classmethod
