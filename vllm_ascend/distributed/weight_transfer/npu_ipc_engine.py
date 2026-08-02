@@ -456,12 +456,12 @@ else:
         backend: ClassVar[str] = "npu_ipc"
 
     @dataclass
-    class NPUIPCWeightTransferUpdateInfo(IPCWeightTransferUpdateInfo):
+    class NPUIPCWeightTransferUpdateInfo(IPCWeightTransferUpdateInfo):  # type: ignore[no-redef]
         """NPU IPC variant — inherits all fields and validation from the CUDA IPC
         base class.  No overrides needed; the field types and ``__post_init__`` are
         identical."""
 
-    class NPUIPCWeightTransferEngine(
+    class NPUIPCWeightTransferEngine(  # type: ignore[no-redef]
         WeightTransferEngine[NPUIPCWeightTransferInitInfo, NPUIPCWeightTransferUpdateInfo],
     ):
         """
