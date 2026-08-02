@@ -127,6 +127,7 @@ class GroupCoordinatorPatch(GroupCoordinator):
             self.rank = torch.distributed.get_rank()
             self.local_rank = local_rank
             self.backend = _normalize_backend(torch_distributed_backend)
+            self.torch_distributed_backend = torch_distributed_backend
             self._acquired_hccl_keys: list[HcclPgKey] = []
             self._unshared_hccl_groups: list[object] = []
             self.use_device_communicator = use_device_communicator
@@ -182,6 +183,7 @@ class GroupCoordinatorPatch(GroupCoordinator):
             self.rank = torch.distributed.get_rank()
             self.local_rank = local_rank
             self.backend = _normalize_backend(torch_distributed_backend)
+            self.torch_distributed_backend = torch_distributed_backend
             self._acquired_hccl_keys: list[HcclPgKey] = []  # type: ignore[no-redef]
             self._unshared_hccl_groups: list[object] = []  # type: ignore[no-redef]
             self.use_device_communicator = use_device_communicator
