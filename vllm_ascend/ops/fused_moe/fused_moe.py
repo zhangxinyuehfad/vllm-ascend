@@ -214,7 +214,6 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
     def ep_rank(self) -> int:
         return self.moe_config.ep_rank
 
-
     # main2main compat: `fused_output_is_reduced` was added to upstream
     # _maybe_reduce_shared_expert_output() in vllm main after 0.26.0.
     # Ascend already reduces shared expert output in

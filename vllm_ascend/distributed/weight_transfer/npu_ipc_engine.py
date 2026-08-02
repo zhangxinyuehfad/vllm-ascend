@@ -599,7 +599,10 @@ else:
             packed_buffer_size_bytes: int = DEFAULT_PACKED_BUFFER_SIZE_BYTES,
         ) -> None:
             TrainerWeightTransferEngine.__init__(
-                self, client=client, source=source, is_sender=is_sender,
+                self,
+                client=client,
+                source=source,
+                is_sender=is_sender,
             )
             self.packed = packed
             self.packed_buffer_size_bytes = packed_buffer_size_bytes

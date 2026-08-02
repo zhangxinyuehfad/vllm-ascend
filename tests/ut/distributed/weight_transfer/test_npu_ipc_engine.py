@@ -100,6 +100,7 @@ def test_unpacked_send_stores_reduce_tensor_args_only():
 
     with patch(f"{_MODULE}.reduce_tensor", fake_reduce):
         if IS_VLLM_026:
+
             def send_mode(update_info):
                 captured["update_info"] = update_info
 
@@ -108,8 +109,7 @@ def test_unpacked_send_stores_reduce_tensor_args_only():
             trainer_args.packed = False
 
             iterator = iter([("model.weight", torch.zeros(3))])
-            NPUIPCWeightTransferEngine._send_unpacked(
-                iterator, trainer_args, "node-0")
+            NPUIPCWeightTransferEngine._send_unpacked(iterator, trainer_args, "node-0")
 
             update_info = captured["update_info"]
             assert isinstance(update_info.ipc_handles, list)
@@ -134,6 +134,7 @@ def test_unpacked_send_stores_reduce_tensor_args_only():
 
         # Only the args tuple is stored, not a (func, args) pair.
         assert stored == rebuild_args
+
 
 def test_receive_weights_rebuilds_with_rebuild_npu_tensor():
     """Bug 2 (consumer): receive_weights rebuilds via ``rebuild_npu_tensor``.
@@ -197,9 +198,7 @@ def test_start_weight_update():
     engine = object.__new__(NPUIPCWeightTransferEngine)
     engine.model = MagicMock()
 
-    with patch(
-        "vllm.model_executor.model_loader.reload.initialize_layerwise_reload"
-    ) as mock_init:
+    with patch("vllm.model_executor.model_loader.reload.initialize_layerwise_reload") as mock_init:
         engine.start_weight_update()
 
     if IS_VLLM_026:
@@ -214,9 +213,7 @@ def test_finish_weight_update():
     engine.model = MagicMock()
     engine.model_config = MagicMock()
 
-    with patch(
-        "vllm.model_executor.model_loader.reload.finalize_layerwise_reload"
-    ) as mock_finalize:
+    with patch("vllm.model_executor.model_loader.reload.finalize_layerwise_reload") as mock_finalize:
         engine.finish_weight_update()
 
     if IS_VLLM_026:
