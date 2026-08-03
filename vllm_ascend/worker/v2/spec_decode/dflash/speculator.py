@@ -151,7 +151,7 @@ class AscendDFlashSpeculator(DFlashSpeculator):
 
 # main2main compat: upstream ``_prepare_dflash_inputs_kernel`` post-0.26.0
 # added four ``temperature``/``seeds`` parameters and corresponding stores
-# (see vllm-project/vllm#48042). Ascend keeps its own kernel for NPU, so
+# (see vllm-project/vllm#50000). Ascend keeps its own kernel for NPU, so
 # match the parameter layout to the upstream signature on each branch.
 if vllm_version_is("0.26.0"):
 
