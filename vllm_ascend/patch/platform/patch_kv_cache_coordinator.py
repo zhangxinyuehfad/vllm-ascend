@@ -31,6 +31,9 @@ from vllm.v1.kv_cache_interface import (
     MambaSpec,
 )
 
+from vllm_ascend.core.single_type_kv_cache_manager import get_manager_for_kv_cache_spec
+from vllm_ascend.utils import vllm_version_is
+
 USE_MULTI_GROUPS_KV_CACHE = True
 
 _orig_get_kv_cache_coordinator = vllm.v1.core.kv_cache_coordinator.get_kv_cache_coordinator
@@ -383,7 +386,7 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
         return cache_hit_blocks, hit_length, longest_hit_length - hit_length
 
 
-def get_kv_cache_coordinator(
+def _build_kv_cache_coordinator(
     kv_cache_config: KVCacheConfig,
     max_model_len: int,
     max_in_flight_tokens: int | None = None,
@@ -397,6 +400,7 @@ def get_kv_cache_coordinator(
     eagle_attn_layer_names: list[str] | None = None,
     metrics_collector: KVCacheMetricsCollector | None = None,
     max_num_batched_tokens: int | None = None,
+    num_prefill_lookahead: int | None = None,
 ) -> KVCacheCoordinator:
     # Keep pcp_world_size in this patched function for upstream call
     # compatibility; platform validation guarantees that it is one.
@@ -433,6 +437,8 @@ def get_kv_cache_coordinator(
         )
         orig_kwargs["max_in_flight_tokens"] = token_budget
         orig_kwargs["scheduler_block_size"] = scheduler_block_size
+        if num_prefill_lookahead is not None:
+            orig_kwargs["num_prefill_lookahead"] = num_prefill_lookahead
         return _orig_get_kv_cache_coordinator(**orig_kwargs)
 
     return AscendHybridKVCacheCoordinator(
@@ -450,6 +456,75 @@ def get_kv_cache_coordinator(
         max_num_batched_tokens=token_budget,
         scheduler_block_size=scheduler_block_size,
     )
+
+
+if vllm_version_is("0.27.1"):
+
+    def get_kv_cache_coordinator(
+        kv_cache_config: KVCacheConfig,
+        max_model_len: int,
+        max_in_flight_tokens: int | None = None,
+        use_eagle: bool = False,
+        enable_caching: bool = True,
+        enable_kv_cache_events: bool = False,
+        dcp_world_size: int = 1,
+        pcp_world_size: int = 1,
+        hash_block_size: int = 0,
+        scheduler_block_size: int | None = None,
+        eagle_attn_layer_names: list[str] | None = None,
+        metrics_collector: KVCacheMetricsCollector | None = None,
+        max_num_batched_tokens: int | None = None,
+    ) -> KVCacheCoordinator:
+        return _build_kv_cache_coordinator(
+            kv_cache_config,
+            max_model_len,
+            max_in_flight_tokens,
+            use_eagle,
+            enable_caching,
+            enable_kv_cache_events,
+            dcp_world_size,
+            pcp_world_size,
+            hash_block_size,
+            scheduler_block_size,
+            eagle_attn_layer_names,
+            metrics_collector,
+            max_num_batched_tokens,
+        )
+
+else:
+
+    def get_kv_cache_coordinator(
+        kv_cache_config: KVCacheConfig,
+        max_model_len: int,
+        max_in_flight_tokens: int | None = None,
+        use_eagle: bool = False,
+        enable_caching: bool = True,
+        enable_kv_cache_events: bool = False,
+        dcp_world_size: int = 1,
+        pcp_world_size: int = 1,
+        hash_block_size: int = 0,
+        scheduler_block_size: int | None = None,
+        eagle_attn_layer_names: list[str] | None = None,
+        metrics_collector: KVCacheMetricsCollector | None = None,
+        max_num_batched_tokens: int | None = None,
+        num_prefill_lookahead: int = 0,
+    ) -> KVCacheCoordinator:
+        return _build_kv_cache_coordinator(
+            kv_cache_config,
+            max_model_len,
+            max_in_flight_tokens,
+            use_eagle,
+            enable_caching,
+            enable_kv_cache_events,
+            dcp_world_size,
+            pcp_world_size,
+            hash_block_size,
+            scheduler_block_size,
+            eagle_attn_layer_names,
+            metrics_collector,
+            max_num_batched_tokens,
+            num_prefill_lookahead,
+        )
 
 
 vllm.v1.core.kv_cache_coordinator.get_kv_cache_coordinator = get_kv_cache_coordinator  # type: ignore[attr-defined]
