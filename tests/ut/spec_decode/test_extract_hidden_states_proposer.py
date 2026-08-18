@@ -32,14 +32,20 @@ from vllm_ascend.ascend_config import init_ascend_config
 from vllm_ascend.spec_decode.extract_hidden_states_proposer import (
     AscendExtractHiddenStatesProposer,
 )
+from vllm_ascend.utils import vllm_version_is
 
 
 @pytest.fixture(autouse=True)
 def _no_pin_memory():
-    with patch(
-        "vllm.v1.spec_decode.extract_hidden_states.PIN_MEMORY",
-        False,
-    ):
+    if vllm_version_is("0.27.1"):
+        with patch(
+            "vllm.v1.spec_decode.extract_hidden_states.PIN_MEMORY",
+            False,
+        ):
+            yield
+    else:
+        # main (cdc4824a21): PIN_MEMORY removed from extract_hidden_states.py
+        # (vllm#51458), no patch needed.
         yield
 
 
