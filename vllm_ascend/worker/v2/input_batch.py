@@ -24,6 +24,7 @@ from vllm.v1.worker.gpu.input_batch import InputBatch, InputBuffers
 
 from vllm_ascend.attention.attention_v1 import AscendAttentionState
 from vllm_ascend.ops.rotary_embedding import update_cos_sin
+from vllm_ascend.utils import vllm_version_is
 
 
 class AscendInputBuffers(InputBuffers):
@@ -68,7 +69,12 @@ class AscendInputBatch(InputBatch):
 
     # Create seq_lens_np.
     # npu's attention backend still needs seq_lens on CPU side.
-    seq_lens_np: np.ndarray
+    if vllm_version_is("0.27.1"):
+        seq_lens_np: np.ndarray
+    else:
+        # main (post-0.27.1): InputBatch gained max_query_len default field,
+        # requiring the child's first field to also have a default.
+        seq_lens_np: np.ndarray = None  # type: ignore[assignment]
     # attn_state is used to build attention metadata.
     attn_state: AscendAttentionState | None = None
 

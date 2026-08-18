@@ -188,7 +188,7 @@ jobs:
             echo "============================"
           done
 
-  recommend-tests-from-coverage:
+  select-tests:
     name: Recommend tests from coverage
     needs: pre-commit
     # Skip the coverage-based recommendation path when the PR opts into the
@@ -543,7 +543,7 @@ jobs:
 
   run-selected-tests-upstream:
     needs:
-      - pre-commit
+      # - pre-commit
       - select-tests
       - ensure-csrc-cache
     # !cancelled() overrides transitive skip-propagation from recommend-tests-from-coverage
@@ -552,9 +552,9 @@ jobs:
       ${{
         !cancelled() &&
         needs.pre-commit.result == 'success' &&
-        needs.ensure-csrc-cache.result == 'success' &&
-        contains(github.event.pull_request.labels.*.name, 'ready-precise') &&
-        needs.select-tests.outputs.has_tests == 'true'
+        needs.select-tests.result == 'success' &&
+        contains(github.event.pull_request.labels.*.name, 'ready') &&
+        needs.ensure-csrc-cache.result == 'success'
       }}
     strategy:
       matrix:
