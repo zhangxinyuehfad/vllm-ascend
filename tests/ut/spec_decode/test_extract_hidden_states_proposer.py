@@ -44,9 +44,14 @@ def _no_pin_memory():
         ):
             yield
     else:
-        # main (cdc4824a21): PIN_MEMORY removed from extract_hidden_states.py
-        # (vllm#51458), no patch needed.
-        yield
+        # main (cdc4824a21): CpuGpuBuffer defaults pin_memory=PIN_MEMORY (True),
+        # which requires NPU registration. Strip pin_memory from torch.zeros
+        # since the test runs on CPU without NPU.
+        original_zeros = torch.zeros
+        def _zeros(*args, pin_memory=False, **kwargs):
+            return original_zeros(*args, **kwargs)
+        with patch("torch.zeros", _zeros):
+            yield
 
 
 class MockCachedRequestState:

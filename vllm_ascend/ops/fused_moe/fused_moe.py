@@ -33,6 +33,7 @@ from vllm_ascend.ops.fused_moe.shared_experts import (
     AscendSharedExperts,
     SharedExpertParallelMode,
 )
+from vllm_ascend.utils import vllm_version_is
 
 
 class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
@@ -89,8 +90,14 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
 
     @property
     def is_internal_router(self) -> bool:
-        gate = self.gate
-        return gate is not None and hasattr(gate, "weight_fp32")
+        if vllm_version_is("0.27.1"):
+            gate = self.gate
+            return gate is not None and hasattr(gate, "weight_fp32")
+        else:
+            # main (cdc4824a21): vllm#51838 removed the gate branch in
+            # DeepseekV2MoE.forward, always passing router_logits=hidden_states.
+            # The runner must recompute router_logits via the gate.
+            return self.gate is not None
 
     @property
     def use_dp_chunking(self) -> bool:
@@ -220,7 +227,16 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
                 # process_weights_after_loading of AscendUnquantizedLinearMethod.
                 hidden_states_fp32 = hidden_states.float()
                 before_routed_experts = torch.npu.current_stream().record_event()
-                router_logits = F.linear(hidden_states_fp32, gate.weight_fp32)
+                if vllm_version_is("0.27.1"):
+                    # v0.27.1: weight_fp32 is guaranteed by is_internal_router.
+                    router_logits = F.linear(hidden_states_fp32, gate.weight_fp32)
+                else:
+                    # main (cdc4824a21): is_internal_router only checks self.gate,
+                    # weight_fp32 may be absent, fall back to gate.weight.
+                    router_logits = F.linear(
+                        hidden_states_fp32,
+                        gate.weight_fp32 if hasattr(gate, "weight_fp32") else gate.weight,
+                    )
                 after_routed_experts = torch.npu.current_stream().record_event()
             else:
                 before_routed_experts = torch.npu.current_stream().record_event()

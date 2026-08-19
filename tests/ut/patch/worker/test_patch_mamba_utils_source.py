@@ -15,15 +15,34 @@ def _top_level_functions(path: Path) -> dict[str, ast.FunctionDef]:
     return {node.name: node for node in ast.parse(path.read_text()).body if isinstance(node, ast.FunctionDef)}
 
 
+def _postprocess_kernels(path: Path) -> list[ast.FunctionDef]:
+    """Collect all postprocess_mamba_fused_kernel definitions (may be nested
+    under the vllm_version_is('0.27.1') if/else gate)."""
+    kernels = []
+
+    def _walk(node: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.FunctionDef) and child.name == "postprocess_mamba_fused_kernel":
+                kernels.append(child)
+            else:
+                _walk(child)
+
+    _walk(ast.parse(path.read_text()))
+    return kernels
+
+
 def test_postprocess_keeps_only_existing_ascend_precision_kernel() -> None:
     functions = _top_level_functions(POSTPROCESS)
 
-    assert set(functions) == {"postprocess_mamba_fused_kernel"}
-    postprocess_source = ast.unparse(functions["postprocess_mamba_fused_kernel"])
-    assert "src_ptr = src_addr.to(tl.pointer_type(tl.uint8))" in postprocess_source
-    assert "dst_ptr = dst_addr.to(tl.pointer_type(tl.uint8))" in postprocess_source
-    assert "PRECOMPUTED_NEW_COMPUTED" in postprocess_source
-    assert "tl.store(num_accepted_tokens_ptr + req_idx, 1)" in postprocess_source
+    assert set(functions) == set()
+    kernels = _postprocess_kernels(POSTPROCESS)
+    assert len(kernels) == 2, "expected one kernel per vllm_version_is branch"
+
+    combined = "\n".join(ast.unparse(k) for k in kernels)
+    assert "src_ptr = src_addr.to(tl.pointer_type(tl.uint8))" in combined
+    assert "dst_ptr = dst_addr.to(tl.pointer_type(tl.uint8))" in combined
+    assert "PRECOMPUTED_NEW_COMPUTED" in combined
+    assert "tl.store(num_accepted_tokens_ptr + req_idx, 1)" in combined
 
 
 def test_patch_only_installs_existing_ascend_postprocess_kernel() -> None:
