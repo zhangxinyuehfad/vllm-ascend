@@ -48,8 +48,10 @@ def _no_pin_memory():
         # which requires NPU registration. Strip pin_memory from torch.zeros
         # since the test runs on CPU without NPU.
         original_zeros = torch.zeros
+
         def _zeros(*args, pin_memory=False, **kwargs):
             return original_zeros(*args, **kwargs)
+
         with patch("torch.zeros", _zeros):
             yield
 

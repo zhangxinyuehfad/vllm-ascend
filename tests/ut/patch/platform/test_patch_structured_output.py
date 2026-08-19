@@ -30,7 +30,7 @@ class FakeBackend:
 
     else:
         # main (cdc4824a21): _create_grammar passes stop_token_ids kwarg
-        def compile_grammar(self, request_type, grammar_spec, **kwargs):
+        def compile_grammar(self, request_type, grammar_spec, stop_token_ids=None):  # type: ignore[misc]
             return (type(self).__name__, request_type, grammar_spec)
 
 

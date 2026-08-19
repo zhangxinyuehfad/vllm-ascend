@@ -6,6 +6,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+from vllm_ascend.utils import vllm_version_is
+
 ROOT = Path(__file__).resolve().parents[4]
 POSTPROCESS = ROOT / "vllm_ascend" / "ops" / "triton" / "mamba" / "postprocess.py"
 PATCH_MAMBA_UTILS = ROOT / "vllm_ascend" / "patch" / "worker" / "patch_mamba_utils.py"
@@ -16,8 +18,9 @@ def _top_level_functions(path: Path) -> dict[str, ast.FunctionDef]:
 
 
 def _postprocess_kernels(path: Path) -> list[ast.FunctionDef]:
-    """Collect all postprocess_mamba_fused_kernel definitions (may be nested
-    under the vllm_version_is('0.27.1') if/else gate)."""
+    """Collect both postprocess_mamba_fused_kernel definitions nested under
+    the vllm_version_is('0.27.1') if/else gate. Index 0 = v0.27.1 branch,
+    index 1 = main (else) branch."""
     kernels = []
 
     def _walk(node: ast.AST) -> None:
@@ -31,18 +34,32 @@ def _postprocess_kernels(path: Path) -> list[ast.FunctionDef]:
     return kernels
 
 
+def _selected_kernel_source(path: Path) -> str:
+    """Return the kernel source that is active for the current vllm version."""
+    kernels = _postprocess_kernels(path)
+    assert len(kernels) == 2, "expected one kernel per vllm_version_is branch"
+    idx = 0 if vllm_version_is("0.27.1") else 1
+    return ast.unparse(kernels[idx])
+
+
 def test_postprocess_keeps_only_existing_ascend_precision_kernel() -> None:
     functions = _top_level_functions(POSTPROCESS)
 
     assert set(functions) == set()
-    kernels = _postprocess_kernels(POSTPROCESS)
-    assert len(kernels) == 2, "expected one kernel per vllm_version_is branch"
+    postprocess_source = _selected_kernel_source(POSTPROCESS)
+    assert "src_ptr = src_addr.to(tl.pointer_type(tl.uint8))" in postprocess_source
+    assert "dst_ptr = dst_addr.to(tl.pointer_type(tl.uint8))" in postprocess_source
+    assert "PRECOMPUTED_NEW_COMPUTED" in postprocess_source
+    assert "tl.store(num_accepted_tokens_ptr + req_idx, 1)" in postprocess_source
 
-    combined = "\n".join(ast.unparse(k) for k in kernels)
-    assert "src_ptr = src_addr.to(tl.pointer_type(tl.uint8))" in combined
-    assert "dst_ptr = dst_addr.to(tl.pointer_type(tl.uint8))" in combined
-    assert "PRECOMPUTED_NEW_COMPUTED" in combined
-    assert "tl.store(num_accepted_tokens_ptr + req_idx, 1)" in combined
+    if vllm_version_is("0.27.1"):
+        assert "TEMPORAL_TILES" not in postprocess_source
+        assert "tile_idx" not in postprocess_source
+    else:
+        assert "TEMPORAL_TILES" in postprocess_source
+        assert "tile_idx" in postprocess_source
+        assert "if tile_idx == 0:" in postprocess_source
+        assert "and state_idx == 0 and tile_idx == 0" not in postprocess_source
 
 
 def test_patch_only_installs_existing_ascend_postprocess_kernel() -> None:

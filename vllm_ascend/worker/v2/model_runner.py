@@ -433,7 +433,7 @@ class NPUModelRunner(GPUModelRunner):
 
     else:
 
-        def prepare_inputs(
+        def prepare_inputs(  # type: ignore[misc]
             self,
             scheduler_output: SchedulerOutput,
             batch_req_state: BatchReqState,
@@ -780,7 +780,7 @@ def graph_manager_wrapper(model_runner):
 
     else:
 
-        def factory(
+        def factory(  # type: ignore[misc]
             vllm_config: VllmConfig,
             device: torch.device,
             cudagraph_mode: CUDAGraphMode,
@@ -795,7 +795,7 @@ def graph_manager_wrapper(model_runner):
                 decode_query_len,
                 model_runner,
                 lora_capture_cases=lora_capture_cases,
-                varlen_decode=varlen_decode,
+                varlen_decode=varlen_decode,  # type: ignore[call-arg]
             )
 
     try:

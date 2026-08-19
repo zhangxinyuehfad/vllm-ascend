@@ -204,54 +204,106 @@ class AscendMoERunner(MoERunner):  # type: ignore[no-redef]
         if self.ascend_shared_experts is not None:
             self.ascend_shared_experts.set_lora_context(lora_context)
 
-    def _forward_impl(
-        self,
-        hidden_states: torch.Tensor,
-        router_logits: torch.Tensor,
-        shared_experts_input: torch.Tensor | None,
-        input_ids: torch.Tensor | None = None,
-    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        with self._sequence_parallel_context():
-            if self.ascend_shared_experts is None:
-                return self.routed_experts.forward_impl(
+    if vllm_version_is("0.27.1"):
+
+        def _forward_impl(
+            self,
+            hidden_states: torch.Tensor,
+            router_logits: torch.Tensor,
+            shared_experts_input: torch.Tensor | None,
+            input_ids: torch.Tensor | None = None,
+        ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+            with self._sequence_parallel_context():
+                if self.ascend_shared_experts is None:
+                    return self.routed_experts.forward_impl(
+                        hidden_states=hidden_states,
+                        router_logits=router_logits,
+                        input_ids=input_ids,
+                    )
+                if self.is_internal_router:
+                    gate = self.gate
+                    assert gate is not None
+                    # NOTE(Angazenn): To make this cast explicitly, the hbm usage might
+                    # increase with extra hidden states. We also assume that all gate
+                    # linear is unquantized so that we the weight is pre-casted in
+                    # process_weights_after_loading of AscendUnquantizedLinearMethod.
+                    hidden_states_fp32 = hidden_states.float()
+                    before_routed_experts = torch.npu.current_stream().record_event()
+                    # v0.27.1: weight_fp32 is guaranteed by is_internal_router.
+                    router_logits = F.linear(hidden_states_fp32, gate.weight_fp32)
+                    after_routed_experts = torch.npu.current_stream().record_event()
+                else:
+                    before_routed_experts = torch.npu.current_stream().record_event()
+                    after_routed_experts = None
+
+                routed_out, fused_moe_events = self.routed_experts.forward_impl(
                     hidden_states=hidden_states,
                     router_logits=router_logits,
                     input_ids=input_ids,
                 )
-            if self.is_internal_router:
-                gate = self.gate
-                assert gate is not None
-                # NOTE(Angazenn): To make this cast explicitly, the hbm usage might
-                # increase with extra hidden states. We also assume that all gate
-                # linear is unquantized so that we the weight is pre-casted in
-                # process_weights_after_loading of AscendUnquantizedLinearMethod.
-                hidden_states_fp32 = hidden_states.float()
-                before_routed_experts = torch.npu.current_stream().record_event()
-                if vllm_version_is("0.27.1"):
-                    # v0.27.1: weight_fp32 is guaranteed by is_internal_router.
-                    router_logits = F.linear(hidden_states_fp32, gate.weight_fp32)
-                else:
+                fused_moe_events.before_routed_experts = before_routed_experts
+                fused_moe_events.after_routed_experts = after_routed_experts
+
+                shared_out = self.ascend_shared_experts.forward(
+                    hidden_states,
+                    fused_moe_events,
+                )
+                return shared_out, routed_out
+
+    else:
+
+        def _forward_impl(
+            self,
+            hidden_states: torch.Tensor,
+            router_logits: torch.Tensor,
+            shared_experts_input: torch.Tensor | None,
+            input_ids: torch.Tensor | None = None,
+        ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+            with self._sequence_parallel_context():
+                if self.ascend_shared_experts is None:
+                    if self.is_internal_router:
+                        gate = self.gate
+                        assert gate is not None
+                        hidden_states_fp32 = hidden_states.float()
+                        router_logits = F.linear(
+                            hidden_states_fp32,
+                            gate.weight_fp32 if hasattr(gate, "weight_fp32") else gate.weight.to(torch.float32),
+                        )
+                    return self.routed_experts.forward_impl(
+                        hidden_states=hidden_states,
+                        router_logits=router_logits,
+                        input_ids=input_ids,
+                    )
+                if self.is_internal_router:
+                    gate = self.gate
+                    assert gate is not None
+                    # NOTE(Angazenn): To make this cast explicitly, the hbm usage might
+                    # increase with extra hidden states. We also assume that all gate
+                    # linear is unquantized so that we the weight is pre-casted in
+                    # process_weights_after_loading of AscendUnquantizedLinearMethod.
+                    hidden_states_fp32 = hidden_states.float()
+                    before_routed_experts = torch.npu.current_stream().record_event()
                     # main (cdc4824a21): is_internal_router only checks self.gate,
                     # weight_fp32 may be absent, fall back to gate.weight.
                     router_logits = F.linear(
                         hidden_states_fp32,
-                        gate.weight_fp32 if hasattr(gate, "weight_fp32") else gate.weight,
+                        gate.weight_fp32 if hasattr(gate, "weight_fp32") else gate.weight.to(torch.float32),
                     )
-                after_routed_experts = torch.npu.current_stream().record_event()
-            else:
-                before_routed_experts = torch.npu.current_stream().record_event()
-                after_routed_experts = None
+                    after_routed_experts = torch.npu.current_stream().record_event()
+                else:
+                    before_routed_experts = torch.npu.current_stream().record_event()
+                    after_routed_experts = None
 
-            routed_out, fused_moe_events = self.routed_experts.forward_impl(
-                hidden_states=hidden_states,
-                router_logits=router_logits,
-                input_ids=input_ids,
-            )
-            fused_moe_events.before_routed_experts = before_routed_experts
-            fused_moe_events.after_routed_experts = after_routed_experts
+                routed_out, fused_moe_events = self.routed_experts.forward_impl(
+                    hidden_states=hidden_states,
+                    router_logits=router_logits,
+                    input_ids=input_ids,
+                )
+                fused_moe_events.before_routed_experts = before_routed_experts
+                fused_moe_events.after_routed_experts = after_routed_experts
 
-            shared_out = self.ascend_shared_experts.forward(
-                hidden_states,
-                fused_moe_events,
-            )
-            return shared_out, routed_out
+                shared_out = self.ascend_shared_experts.forward(
+                    hidden_states,
+                    fused_moe_events,
+                )
+                return shared_out, routed_out

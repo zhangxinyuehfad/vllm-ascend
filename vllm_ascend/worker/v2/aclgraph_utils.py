@@ -95,7 +95,7 @@ class ModelAclGraphManager(ModelCudaGraphManager):
 
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             vllm_config: VllmConfig,
             device: torch.device,

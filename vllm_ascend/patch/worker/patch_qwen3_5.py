@@ -213,7 +213,7 @@ if Qwen3_5MultiTokenPredictor is not None:
         hidden_states, _ = self.norm(hidden_states, residual)
         if mtp_layer.use_attn_reduce_scatter_for_moe:
             hidden_states = tensor_model_parallel_all_gather(hidden_states, 0)
-            hidden_states = hidden_states[:positions.shape[-1]]
+            hidden_states = hidden_states[: positions.shape[-1]]
         return hidden_states
 
     Qwen3_5MultiTokenPredictor.forward = qwen3_5_mtp_forward

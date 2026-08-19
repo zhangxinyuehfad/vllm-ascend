@@ -31,7 +31,6 @@ from vllm.v1.kv_cache_interface import (
     MambaSpec,
 )
 
-from vllm_ascend.core.single_type_kv_cache_manager import get_manager_for_kv_cache_spec
 from vllm_ascend.utils import vllm_version_is
 
 USE_MULTI_GROUPS_KV_CACHE = True
@@ -186,7 +185,7 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
 
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             kv_cache_config: KVCacheConfig,
             max_model_len: int,
@@ -240,7 +239,7 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
             )
 
             # KV cache group indices that get the EAGLE last-block drop.
-            self.eagle_group_ids: set[int] = {
+            self.eagle_group_ids: set[int] = {  # type: ignore[no-redef]
                 i for i, g in enumerate(kv_cache_config.kv_cache_groups) if g.is_eagle_group
             }
             # Conservatively fall back to flag all groups when no group is flagged.
@@ -503,7 +502,7 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
 
 if vllm_version_is("0.27.1"):
 
-    def _build_kv_cache_coordinator(
+    def get_kv_cache_coordinator(
         kv_cache_config: KVCacheConfig,
         max_model_len: int,
         max_in_flight_tokens: int | None = None,
@@ -573,7 +572,7 @@ if vllm_version_is("0.27.1"):
 
 else:
 
-    def _build_kv_cache_coordinator(
+    def get_kv_cache_coordinator(  # type: ignore[misc]
         kv_cache_config: KVCacheConfig,
         max_model_len: int,
         max_in_flight_tokens: int | None = None,
@@ -594,7 +593,7 @@ else:
         del pcp_world_size
         token_budget = _select_kv_token_budget(max_model_len, max_in_flight_tokens, max_num_batched_tokens)
         if _is_deepseek_v4_kv_cache_config(kv_cache_config):
-            return AscendHybridKVCacheCoordinator(
+            return AscendHybridKVCacheCoordinator(  # type: ignore[call-arg]
                 kv_cache_config,
                 max_model_len,
                 use_eagle,
@@ -629,7 +628,7 @@ else:
                 orig_kwargs["num_prefill_lookahead"] = num_prefill_lookahead
             return _orig_get_kv_cache_coordinator(**orig_kwargs)
 
-        return AscendHybridKVCacheCoordinator(
+        return AscendHybridKVCacheCoordinator(  # type: ignore[call-arg]
             kv_cache_config,
             max_model_len,
             use_eagle,
@@ -664,7 +663,7 @@ if vllm_version_is("0.27.1"):
         metrics_collector: KVCacheMetricsCollector | None = None,
         max_num_batched_tokens: int | None = None,
     ) -> KVCacheCoordinator:
-        return _build_kv_cache_coordinator(
+        return get_kv_cache_coordinator(
             kv_cache_config,
             max_model_len,
             max_in_flight_tokens,
@@ -682,7 +681,7 @@ if vllm_version_is("0.27.1"):
 
 else:
 
-    def get_kv_cache_coordinator(
+    def get_kv_cache_coordinator(  # type: ignore[misc]
         kv_cache_config: KVCacheConfig,
         max_model_len: int,
         max_in_flight_tokens: int | None = None,
@@ -698,7 +697,7 @@ else:
         max_num_batched_tokens: int | None = None,
         num_prefill_lookahead: int = 0,
     ) -> KVCacheCoordinator:
-        return _build_kv_cache_coordinator(
+        return get_kv_cache_coordinator(  # type: ignore[call-arg]
             kv_cache_config,
             max_model_len,
             max_in_flight_tokens,
