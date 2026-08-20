@@ -147,7 +147,6 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
                     dcp_world_size=dcp_world_size,
                     pcp_world_size=1,
                     max_in_flight_tokens=token_budget,
-                    max_num_batched_tokens=token_budget,
                     max_model_len=max_model_len,
                     **extra_mgr_kwargs,
                 )
@@ -257,7 +256,6 @@ class AscendHybridKVCacheCoordinator(HybridKVCacheCoordinator):
                     dcp_world_size=dcp_world_size,
                     pcp_world_size=1,
                     max_in_flight_tokens=token_budget,
-                    max_num_batched_tokens=token_budget,
                     max_model_len=max_model_len,
                     **extra_mgr_kwargs,
                 )
@@ -643,75 +641,6 @@ else:
             max_num_batched_tokens=token_budget,
             scheduler_block_size=scheduler_block_size,
             num_prefill_lookahead=num_prefill_lookahead,
-        )
-
-
-if vllm_version_is("0.27.1"):
-
-    def get_kv_cache_coordinator(
-        kv_cache_config: KVCacheConfig,
-        max_model_len: int,
-        max_in_flight_tokens: int | None = None,
-        use_eagle: bool = False,
-        enable_caching: bool = True,
-        enable_kv_cache_events: bool = False,
-        dcp_world_size: int = 1,
-        pcp_world_size: int = 1,
-        hash_block_size: int = 0,
-        scheduler_block_size: int | None = None,
-        eagle_attn_layer_names: list[str] | None = None,
-        metrics_collector: KVCacheMetricsCollector | None = None,
-        max_num_batched_tokens: int | None = None,
-    ) -> KVCacheCoordinator:
-        return get_kv_cache_coordinator(
-            kv_cache_config,
-            max_model_len,
-            max_in_flight_tokens,
-            use_eagle,
-            enable_caching,
-            enable_kv_cache_events,
-            dcp_world_size,
-            pcp_world_size,
-            hash_block_size,
-            scheduler_block_size,
-            eagle_attn_layer_names,
-            metrics_collector,
-            max_num_batched_tokens,
-        )
-
-else:
-
-    def get_kv_cache_coordinator(  # type: ignore[misc]
-        kv_cache_config: KVCacheConfig,
-        max_model_len: int,
-        max_in_flight_tokens: int | None = None,
-        use_eagle: bool = False,
-        enable_caching: bool = True,
-        enable_kv_cache_events: bool = False,
-        dcp_world_size: int = 1,
-        pcp_world_size: int = 1,
-        hash_block_size: int = 0,
-        scheduler_block_size: int | None = None,
-        eagle_attn_layer_names: list[str] | None = None,
-        metrics_collector: KVCacheMetricsCollector | None = None,
-        max_num_batched_tokens: int | None = None,
-        num_prefill_lookahead: int = 0,
-    ) -> KVCacheCoordinator:
-        return get_kv_cache_coordinator(  # type: ignore[call-arg]
-            kv_cache_config,
-            max_model_len,
-            max_in_flight_tokens,
-            use_eagle,
-            enable_caching,
-            enable_kv_cache_events,
-            dcp_world_size,
-            pcp_world_size,
-            hash_block_size,
-            scheduler_block_size,
-            eagle_attn_layer_names,
-            metrics_collector,
-            max_num_batched_tokens,
-            num_prefill_lookahead,
         )
 
 
