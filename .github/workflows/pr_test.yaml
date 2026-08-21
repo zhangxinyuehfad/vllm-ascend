@@ -188,7 +188,7 @@ jobs:
             echo "============================"
           done
 
-  select-tests:
+  recommend-tests-from-coverage:
     name: Recommend tests from coverage
     needs: pre-commit
     # Skip the coverage-based recommendation path when the PR opts into the
@@ -552,9 +552,9 @@ jobs:
       ${{
         !cancelled() &&
         needs.pre-commit.result == 'success' &&
-        needs.select-tests.result == 'success' &&
-        contains(github.event.pull_request.labels.*.name, 'ready') &&
-        needs.ensure-csrc-cache.result == 'success'
+        needs.ensure-csrc-cache.result == 'success' &&
+        contains(github.event.pull_request.labels.*.name, 'ready-precise') &&
+        needs.select-tests.outputs.has_tests == 'true'
       }}
     strategy:
       matrix:
