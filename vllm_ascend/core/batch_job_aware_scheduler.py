@@ -140,6 +140,7 @@ class JobDecodeEstimator:
             return self._COLD_START_DEFAULT_DECODE
         return int(job_stat.ewma_average)
 
+
     def observe(self, job_name: str, decode_len: int) -> None:
         """Record one decode‑length observation for *job*.
 
