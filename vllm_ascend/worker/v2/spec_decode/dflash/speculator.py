@@ -16,8 +16,8 @@ from vllm.v1.worker.gpu.spec_decode.dflash.speculator import (
     DFlashSpeculator,
 )
 
-from vllm_ascend.worker.v2.attn_utils import build_attn_metadata_wrapper
 from vllm_ascend.utils import vllm_version_is
+from vllm_ascend.worker.v2.attn_utils import build_attn_metadata_wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,6 @@ if vllm_version_is("0.27.1"):
         PAD_SLOT_ID: tl.constexpr,
         BLOCK_SIZE: tl.constexpr,
     ):
-
         req_idx = tl.program_id(0)
         block_idx = tl.program_id(1)
         num_reqs = tl.num_programs(0)
@@ -298,7 +297,6 @@ if vllm_version_is("0.27.1"):
             for i in range(q_pad_start, max_num_tokens):
                 tl.store(out_query_slot_mapping_ptr + i, PAD_SLOT_ID)
 else:
-
     # main2main compat: upstream ``_prepare_dflash_inputs_kernel`` added
     # ``cp_rank``/``CP_SIZE``/``CP_INTERLEAVE`` for DCP support (see
     # vllm-project/vllm#52188). The extra parameters are unused: Ascend does not
@@ -348,7 +346,6 @@ else:
         CP_INTERLEAVE: tl.constexpr,
         BLOCK_SIZE: tl.constexpr,
     ):
-
         req_idx = tl.program_id(0)
         block_idx = tl.program_id(1)
         num_reqs = tl.num_programs(0)

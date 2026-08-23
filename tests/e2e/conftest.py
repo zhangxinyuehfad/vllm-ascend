@@ -1993,8 +1993,10 @@ PROMPT_CONFIGS = {
         "prompt_fn": hunyuan_prompt,
         "mm_processor_kwargs": {},
         **(
-            {"skip": "HunyuanVL is not supported on vLLM >= 0.27.1 "
-                     "(upstream vllm-project/vllm#53272 removed native Hunyuan V1/VL)."}
+            {
+                "skip": "HunyuanVL is not supported on vLLM >= 0.27.1 "
+                "(upstream vllm-project/vllm#53272 removed native Hunyuan V1/VL)."
+            }
             if not vllm_version_is("0.27.1")
             else {}
         ),
