@@ -367,7 +367,18 @@ class AscendCommonAttentionMetadata(CommonAttentionMetadata):
             _seq_lens_cpu=_slice_reqs(self._seq_lens_cpu),
             _num_computed_tokens_cpu=_slice_reqs(self._num_computed_tokens_cpu),
             dcp_local_seq_lens=_slice_reqs(self.dcp_local_seq_lens),
-            dcp_local_seq_lens_cpu=_slice_reqs(self.dcp_local_seq_lens_cpu),
+            # Upstream #56157 renamed dcp_local_seq_lens_cpu to
+            # dcp_local_seq_lens_cpu_upper_bound on main. The old name is
+            # still present on the v0.28.0 release lane.
+            **(
+                {"dcp_local_seq_lens_cpu": _slice_reqs(self.dcp_local_seq_lens_cpu)}
+                if vllm_version_is("0.28.0")
+                else {
+                    "dcp_local_seq_lens_cpu_upper_bound": _slice_reqs(
+                        self.dcp_local_seq_lens_cpu_upper_bound
+                    )
+                }
+            ),
             is_prefilling=_slice_reqs(self.is_prefilling),
             encoder_seq_lens=_slice_reqs(self.encoder_seq_lens),
             encoder_seq_lens_cpu=_slice_reqs(self.encoder_seq_lens_cpu),
