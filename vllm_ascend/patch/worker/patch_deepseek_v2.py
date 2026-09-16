@@ -475,11 +475,11 @@ else:
             _skip_topk = _index_topk_pattern[layer_id] == "S"
 
     # The skip pattern only governs backbone layers. MTP/nextn layers
-    # (layer_id >= num_hidden_layers) must never start with skip_topk=True:
-    # they compute their own indices at draft step 0 and toggle at runtime
-    # via set_skip_topk (index_share_for_mtp_iteration). Matches upstream
-    # deepseek_v2.py behavior.
-    mtp_layer = is_mtp_layer(config, prefix)
+        # (layer_id >= num_hidden_layers) must never start with skip_topk=True:
+        # they compute their own indices at draft step 0 and toggle at runtime
+        # via set_skip_topk (index_share_for_mtp_iteration). Matches upstream
+        # deepseek_v2.py behavior.
+        mtp_layer = is_mtp_layer(config, prefix)
 
         skip_indexer_init = _should_skip_indexer_init(config, prefix, _skip_topk)
         if self.is_v32 and not skip_indexer_init:
@@ -525,21 +525,21 @@ else:
             topk_indices_buffer=topk_indices_buffer,
         )
 
-    self.mla_attn = MultiHeadLatentAttentionWrapper(
-        self.hidden_size,
-        self.num_local_heads,
-        self.scaling,
-        self.qk_nope_head_dim,
-        self.qk_rope_head_dim,
-        self.v_head_dim,
-        self.q_lora_rank,
-        self.kv_lora_rank,
-        mla_modules,
-        cache_config,
-        quant_config,
-        prefix,
-        skip_topk=_skip_topk and not mtp_layer,
-    )
+        self.mla_attn = MultiHeadLatentAttentionWrapper(
+            self.hidden_size,
+            self.num_local_heads,
+            self.scaling,
+            self.qk_nope_head_dim,
+            self.qk_rope_head_dim,
+            self.v_head_dim,
+            self.q_lora_rank,
+            self.kv_lora_rank,
+            mla_modules,
+            cache_config,
+            quant_config,
+            prefix,
+            skip_topk=_skip_topk and not mtp_layer,
+        )
 
 
 DeepseekV2MLAAttention.__init__ = _deepseek_v2_mla_attention_init
