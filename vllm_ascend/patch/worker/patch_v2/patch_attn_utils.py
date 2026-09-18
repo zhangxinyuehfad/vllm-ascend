@@ -48,6 +48,12 @@ if not vllm_version_is("0.28.0"):
 
     def _ascend_init_kv_cache(*args, **kwargs):
         kv_caches = _orig_init_kv_cache(*args, **kwargs)
+        # Keep the full mapping (including tuple/list values) so offload
+        # connectors can re-register it: SimpleCPUOffload's NPU worker needs
+        # the per-layer K/V tensors to build block views, but the stripped
+        # dict is empty for pure-attention models where every value is a K/V
+        # tuple.
+        _ascend_init_kv_cache._full = dict(kv_caches)
         for name in [n for n, c in kv_caches.items() if not isinstance(c, torch.Tensor)]:
             del kv_caches[name]
         return kv_caches

@@ -262,6 +262,13 @@ class NPUModelRunner(GPUModelRunner):
                 kv_cache_config,
                 kv_cache_allocation_context=kv_cache_allocation_context,
             )
+            if not vllm_version_is("0.28.0") and has_kv_transfer_group():
+                from vllm_ascend.patch.worker.patch_v2.patch_attn_utils import (
+                    _ascend_init_kv_cache,
+                )
+                full = getattr(_ascend_init_kv_cache, "_full", None)
+                if full is not None:
+                    get_kv_transfer_group().register_kv_caches(full)
             if self.pcp_manager is not None:
                 assert isinstance(self.pcp_manager, AscendPCPManager)
                 self.pcp_manager.vllm_config = self.vllm_config
