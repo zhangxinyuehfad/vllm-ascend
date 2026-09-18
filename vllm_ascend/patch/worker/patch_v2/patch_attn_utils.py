@@ -37,21 +37,19 @@ vllm.v1.worker.gpu.model_runner.get_kv_cache_spec = get_kv_cache_spec
 # kv_caches_dict.values() if cache.device == self.device]` in
 # GPUModelRunner.initialize_kv_cache.  Ascend's _reshape_kv_cache_v2 stores
 # list (Mamba) / tuple (SFA) values alongside plain tensors; the filter
-# crashes on non-tensor values.  Patch init_kv_cache to wrap non-tensor values
-# so cache.device does not crash and they are filtered out of self.kv_caches.
+# crashes on non-tensor values.  Patch init_kv_cache to drop non-tensor
+# values: they are already bound to their layers by bind_kv_cache_to_layers,
+# and leaving them in the dict breaks both the self.kv_caches filter and
+# get_kv_connector (which accesses .shape on every value).
 if not vllm_version_is("0.28.0"):
     from vllm.v1.worker.gpu import attn_utils
-
-    class _NonTensorCache:
-        device = torch.device("cpu")
 
     _orig_init_kv_cache = attn_utils.init_kv_cache
 
     def _ascend_init_kv_cache(*args, **kwargs):
         kv_caches = _orig_init_kv_cache(*args, **kwargs)
-        for name, cache in kv_caches.items():
-            if not isinstance(cache, torch.Tensor):
-                kv_caches[name] = _NonTensorCache()
+        for name in [n for n, c in kv_caches.items() if not isinstance(c, torch.Tensor)]:
+            del kv_caches[name]
         return kv_caches
 
     attn_utils.init_kv_cache = _ascend_init_kv_cache
