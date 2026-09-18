@@ -48,11 +48,10 @@ if not vllm_version_is("0.28.0"):
 
     def _ascend_init_kv_cache(*args, **kwargs):
         kv_caches = _orig_init_kv_cache(*args, **kwargs)
-        # Keep the full mapping (including tuple/list values) so offload
-        # connectors can re-register it: SimpleCPUOffload's NPU worker needs
-        # the per-layer K/V tensors to build block views, but the stripped
-        # dict is empty for pure-attention models where every value is a K/V
-        # tuple.
+        # Keep the full mapping (including tuple/list values) for
+        # _ascend_get_kv_connector below: connectors must register against
+        # the unstripped dict, since Ascend attention layers hold (K, V)
+        # tuples and the stripped dict is empty for pure-attention models.
         _ascend_init_kv_cache._full = dict(kv_caches)
         for name in [n for n, c in kv_caches.items() if not isinstance(c, torch.Tensor)]:
             del kv_caches[name]
@@ -64,6 +63,22 @@ if not vllm_version_is("0.28.0"):
     _model_runner = sys.modules.get("vllm.v1.worker.gpu.model_runner")
     if _model_runner is not None:
         _model_runner.init_kv_cache = _ascend_init_kv_cache
+
+        _orig_get_kv_connector = _model_runner.get_kv_connector
+
+        def _ascend_get_kv_connector(vllm_config, kv_caches_dict):
+            # register_kv_caches needs the unstripped mapping: Ascend
+            # attention layers register (K, V) tuples which the stripped
+            # dict drops, so connectors (OffloadingConnector /
+            # SimpleCPUOffload) would see an empty dict and either raise
+            # KeyError or never initialize their backends. The runner-side
+            # self.kv_caches filter above keeps using the stripped dict.
+            full = getattr(_ascend_init_kv_cache, "_full", None)
+            if full is not None:
+                kv_caches_dict = full
+            return _orig_get_kv_connector(vllm_config, kv_caches_dict)
+
+        _model_runner.get_kv_connector = _ascend_get_kv_connector
 
 if not vllm_version_is("0.28.0"):
     from vllm.v1.worker.gpu import cudagraph_utils
