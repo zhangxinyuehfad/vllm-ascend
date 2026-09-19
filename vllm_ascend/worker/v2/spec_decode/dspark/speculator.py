@@ -30,6 +30,7 @@ from vllm.v1.worker.gpu.spec_decode.dspark.speculator import (
 
 from vllm_ascend.utils import (
     get_rotation_path,
+    vllm_version_is,
 )
 from vllm_ascend.worker.v2.attn_utils import (
     build_attn_metadata_wrapper,
