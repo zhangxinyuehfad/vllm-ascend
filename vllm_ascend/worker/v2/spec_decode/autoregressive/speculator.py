@@ -537,11 +537,13 @@ class AscendAutoRegressiveSpeculator(AutoRegressiveSpeculator):
             dcp_local_seq_lens: torch.Tensor | None = None,
         ) -> dict[str, Any] | None:
             assert self.input_batch is not None
-            num_tokens = (
-                batch_desc.num_tokens
-                if batch_desc.cg_mode == CUDAGraphMode.FULL
-                else int(query_start_loc_np[-1])
-            )
+            # PCP may adjust batch_desc.num_tokens for the draft prefill
+            # (upstream #56107), and the DSA metadata cos/sin must match the
+            # forward-context num_tokens (read by _EXTRA_CTX.num_tokens).
+            # Always use batch_desc.num_tokens so both stay in sync; the
+            # query_start_loc_np based value only accounts for the pre-PCP
+            # target token count and desyncs the two for non-FULL prefill.
+            num_tokens = batch_desc.num_tokens
             is_prefilling_t = torch.from_numpy(self.input_batch.is_prefilling_np)
             with build_draft_attn_metadata_factory(
                 self.input_buffers.positions,

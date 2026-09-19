@@ -42,6 +42,7 @@ from vllm_ascend.compilation.acl_graph import set_graph_params, update_full_grap
 from vllm_ascend.compilation.breakable_aclgraph import BreakableACLGraphWrapper
 from vllm_ascend.worker.v2.input_batch import AscendInputBatch
 from vllm_ascend.worker.v2.utils import communicator_switch
+from vllm_ascend.utils import vllm_version_is
 
 
 def _prepare_pcp_inputs_to_capture(
