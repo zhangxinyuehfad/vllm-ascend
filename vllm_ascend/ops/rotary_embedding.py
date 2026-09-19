@@ -316,16 +316,11 @@ class AscendYaRNRotaryEmbedding(YaRNScalingRotaryEmbedding):
             # TODO: current not support actual truncate，adaptation for extra parameters to be compatible with vllm
             "truncate": kwargs.pop("truncate", False),
         }
-        if vllm_version_is("0.28.0"):
-            extra_kwargs["extrapolation_factor"] = kwargs.pop("extrapolation_factor", 1)
-            extra_kwargs["attn_factor"] = kwargs.pop("attn_factor", 1)
-            extra_kwargs["apply_yarn_scaling"] = kwargs.pop("apply_yarn_scaling", True)
-        else:
-            # Upstream #56446 replaced extrapolation_factor/attn_factor/
-            # apply_yarn_scaling with mscale/mscale_all_dim/attention_factor.
-            for k in ("mscale", "mscale_all_dim", "attention_factor"):
-                if k in kwargs:
-                    extra_kwargs[k] = kwargs.pop(k)
+        # Upstream #56446 replaced extrapolation_factor/attn_factor/
+        # apply_yarn_scaling with mscale/mscale_all_dim/attention_factor.
+        for k in ("mscale", "mscale_all_dim", "attention_factor"):
+            if k in kwargs:
+                extra_kwargs[k] = kwargs.pop(k)
         super().__init__(
             head_size, rotary_dim, max_position_embeddings, base, is_neox_style, scaling_factor, dtype, **extra_kwargs
         )
@@ -369,15 +364,11 @@ class AscendDeepseekScalingRotaryEmbedding(DeepseekScalingRotaryEmbedding):
         beta_slow = kwargs.pop("beta_slow", 1)
         mscale = kwargs.pop("mscale", 1)
         mscale_all_dim = kwargs.pop("mscale_all_dim", 0)
-        if vllm_version_is("0.28.0"):
-            extrapolation_factor = kwargs.pop("extrapolation_factor", 1)
-            attn_factor = kwargs.pop("attn_factor", 1)
-        else:
-            # Upstream #56446 removed extrapolation_factor/attn_factor
-            # from DeepseekScalingRotaryEmbedding.
-            extrapolation_factor = 1
-            attn_factor = 1
-            kwargs.pop("init_cache", None)  # upstream main added, unused
+        # Upstream #56446 removed extrapolation_factor/attn_factor
+        # from DeepseekScalingRotaryEmbedding.
+        extrapolation_factor = 1
+        attn_factor = 1
+        kwargs.pop("init_cache", None)  # upstream main added, unused
         # Note: we adopt the native huggingface deepseek rope initialization code from
         # https://huggingface.co/deepseek-ai/DeepSeek-V3-0324/blob/main/modeling_deepseek.py for
         # its more ascend compute friendly

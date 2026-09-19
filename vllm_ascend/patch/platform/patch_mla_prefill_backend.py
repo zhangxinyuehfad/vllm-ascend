@@ -53,5 +53,5 @@ vllm.model_executor.layers.attention.mla_attention.get_mla_prefill_backend = lam
 # Upstream #56157 introduced supports_pcp_dcp on MLAAttention (default False)
 # which raises NotImplementedError when PCP+DCP is used. Ascend MLA supports
 # PCP+DCP, so opt in on the main lane.
-if not vllm_version_is("0.28.0"):
+if not vllm_version_is("0.29.0"):
     MLAAttention.supports_pcp_dcp = True

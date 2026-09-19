@@ -126,7 +126,7 @@ SpeculativeConfig.__post_init__ = _dspark_post_init
 # parallel config, but non-MoE draft models (e.g. VWN eagle3) fail the
 # _verify_with_expert_parallelism check in ModelConfig.verify_with_parallel_config.
 # Skip the EP check for non-MoE draft model configs.
-if not vllm_version_is("0.28.0"):
+if not vllm_version_is("0.29.0"):
     from vllm.config.model import ModelConfig
 
     _orig_verify_with_parallel_config = ModelConfig.verify_with_parallel_config

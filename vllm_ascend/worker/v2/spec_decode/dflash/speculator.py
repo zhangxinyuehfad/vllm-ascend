@@ -27,30 +27,20 @@ class AscendDFlashSpeculator(DFlashSpeculator):
     def build_draft_attn_metadatas(self, num_reqs_padded, seq_lens_cpu_upper_bound):
         num_tokens_padded = num_reqs_padded * self.num_query_per_req
         with build_attn_metadata_wrapper():
-            if vllm_version_is("0.28.0"):
-                attn_metadata = self._build_draft_attn_metadata(
-                    num_reqs=self.input_batch.num_reqs,
-                    num_reqs_padded=num_reqs_padded,
-                    num_tokens_padded=num_tokens_padded,
-                    seq_lens_cpu_upper_bound=seq_lens_cpu_upper_bound,
-                    step=self.num_query_per_req,
-                    causal=self._group_causal,
-                )
-            else:
-                # Upstream #56181 split _build_draft_attn_metadata into
-                # _build_uniform_attn_metadata / _build_attn_metadata.
-                attn_metadata = self._build_uniform_attn_metadata(
-                    batch_desc=BatchExecutionDescriptor(
-                        cg_mode=CUDAGraphMode.FULL,
-                        num_tokens=num_tokens_padded,
-                        num_reqs=num_reqs_padded,
-                    ),
-                    num_reqs=self.input_batch.num_reqs,
-                    num_query_per_req=self.num_query_per_req,
-                    seq_lens_cpu_upper_bound=seq_lens_cpu_upper_bound,
-                    step=self.num_query_per_req,
-                    causal=self._group_causal,
-                )
+            # Upstream #56181 split _build_draft_attn_metadata into
+            # _build_uniform_attn_metadata / _build_attn_metadata.
+            attn_metadata = self._build_uniform_attn_metadata(
+                batch_desc=BatchExecutionDescriptor(
+                    cg_mode=CUDAGraphMode.FULL,
+                    num_tokens=num_tokens_padded,
+                    num_reqs=num_reqs_padded,
+                ),
+                num_reqs=self.input_batch.num_reqs,
+                num_query_per_req=self.num_query_per_req,
+                seq_lens_cpu_upper_bound=seq_lens_cpu_upper_bound,
+                step=self.num_query_per_req,
+                causal=self._group_causal,
+            )
         self._update_draft_attn_metadata(attn_metadata, num_reqs_padded)
         return [attn_metadata]
 

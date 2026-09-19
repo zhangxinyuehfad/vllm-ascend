@@ -342,8 +342,6 @@ class AscendW4A8DynamicFusedMoEMethod(AscendMoEScheme):
             layer.w2_weight.data = self._pack_to_int32(layer.w2_weight.data)
 
     def _sum_with_dim(self, x: torch.Tensor, dim: int) -> torch.Tensor:
-        if vllm_version_is("0.28.0"):
-            return x.sum(axis=dim)
         return x.sum(dim=dim)
 
     def process_weights_after_loading_compressed_tensors(self, layer):

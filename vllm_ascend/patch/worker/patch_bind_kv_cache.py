@@ -76,10 +76,10 @@ def bind_kv_cache_to_layers(
     ordered_layer_names = sorted(
         kv_caches, key=lambda name: extract_layer_index(name, num_attn_module)
     )
-    if not vllm_version_is("0.28.0"):
+    if not vllm_version_is("0.29.0"):
         utils.share_replayssm_ring_trackers(ordered_layer_names, forward_context, kv_cache_groups)
 
 
 utils.bind_kv_cache = bind_kv_cache
-if not vllm_version_is("0.28.0"):
+if not vllm_version_is("0.29.0"):
     utils.bind_kv_cache_to_layers = bind_kv_cache_to_layers

@@ -59,8 +59,8 @@ def _should_skip_indexer_init(
     indexer_type = indexer_types[layer_id] if indexer_types is not None and layer_id < len(indexer_types) else None
     return isinstance(indexer_type, str) and indexer_type.lower() == "shared"
 
-if vllm_version_is("0.28.0"):
-    def _deepseek_v2_mla_attention_init(
+
+def _deepseek_v2_mla_attention_init(
         self,
         vllm_config: VllmConfig,
         config: DeepseekV2Config | DeepseekV3Config,
@@ -299,8 +299,8 @@ if vllm_version_is("0.28.0"):
             prefix,
             skip_topk=_skip_topk and not is_mtp_layer,
         )
-else:
-    def _deepseek_v2_mla_attention_init(
+
+def _deepseek_v2_mla_attention_init(
         self,
         vllm_config: VllmConfig,
         config: DeepseekV2Config | DeepseekV3Config,

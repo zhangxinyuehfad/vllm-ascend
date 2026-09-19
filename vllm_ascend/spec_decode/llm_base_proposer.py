@@ -378,14 +378,7 @@ class AscendSpecDecodeBaseProposer(SpecDecodeBaseProposer):
 
         if self.supports_mm_inputs:
             # Match upstream: a multimodal target can use a text-only drafter.
-            if vllm_version_is("0.28.0"):
-                try:
-                    dummy_input_ids = torch.tensor([[1]], device=self.input_ids.device)
-                    self.model.embed_input_ids(dummy_input_ids, multimodal_embeddings=None)
-                except (NotImplementedError, AttributeError, TypeError):
-                    logger.warning("Draft model does not support multimodal inputs, falling back to text-only mode")
-                    self.supports_mm_inputs: bool = False
-            elif not supports_multimodal_embeddings(self.model):
+            if not supports_multimodal_embeddings(self.model):
                 # Upstream #50417 replaced the runtime probe with this static
                 # capability check. Probing by calling embed_input_ids would run
                 # before the target embedding is aliased into the draft (see

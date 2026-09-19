@@ -66,32 +66,18 @@ class AscendPCPManager(PCPManager):
         dcp_rank: int = 0,
         cp_interleave: int = 1,
     ) -> None:
-        if vllm_version_is("0.28.0"):
-            super().__init__(
-                pcp_world_size=pcp_world_size,
-                pcp_rank=pcp_rank,
-                device=device,
-                req_states=req_states,
-                max_num_reqs=max_num_reqs,
-                max_num_tokens=max_num_tokens,
-                block_tables=block_tables,
-                dcp_world_size=dcp_world_size,
-                dcp_rank=dcp_rank,
-                cp_interleave=cp_interleave,
-            )
-        else:
-            # Upstream removed req_states from PCPManager.__init__ on main.
-            super().__init__(
-                pcp_world_size=pcp_world_size,
-                pcp_rank=pcp_rank,
-                device=device,
-                max_num_reqs=max_num_reqs,
-                max_num_tokens=max_num_tokens,
-                block_tables=block_tables,
-                dcp_world_size=dcp_world_size,
-                dcp_rank=dcp_rank,
-                cp_interleave=cp_interleave,
-            )
+        # Upstream removed req_states from PCPManager.__init__ on main.
+        super().__init__(
+            pcp_world_size=pcp_world_size,
+            pcp_rank=pcp_rank,
+            device=device,
+            max_num_reqs=max_num_reqs,
+            max_num_tokens=max_num_tokens,
+            block_tables=block_tables,
+            dcp_world_size=dcp_world_size,
+            dcp_rank=dcp_rank,
+            cp_interleave=cp_interleave,
+        )
 
         # vLLM #53515 made the PCP-local buffers persistent and uses them for
         # graph capture. Preserve that ownership while providing the extra CPU
@@ -252,21 +238,7 @@ class AscendPCPManager(PCPManager):
         )
 
     def get_num_tokens_for_dispatch(self, num_scheduled_tokens: np.ndarray, is_prefilling: np.ndarray) -> int:
-        if not vllm_version_is("0.28.0"):
-            return super().get_num_tokens_for_dispatch(num_scheduled_tokens, is_prefilling)
-        # Reuse the actual partition rules: decode is replicated, while each
-        # prefill contributes two chunks. Computed positions only reorder rows.
-        query_start_loc = np.concatenate(([0], np.cumsum(num_scheduled_tokens)))
-        num_computed_tokens = np.zeros_like(num_scheduled_tokens)
-        return max(
-            sum(
-                segment.num_tokens
-                for segment in self._get_rank_segments(
-                    rank, num_scheduled_tokens, num_computed_tokens, is_prefilling, query_start_loc
-                )
-            )
-            for rank in range(self.pcp_world_size)
-        )
+        return super().get_num_tokens_for_dispatch(num_scheduled_tokens, is_prefilling)
 
     def partition_batch(
         self,

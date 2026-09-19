@@ -172,58 +172,9 @@ class SimpleCPUOffloadNPUWorker(SimpleCPUOffloadWorker):
 
         On main, upstream submits loads (``start_load_kv``) and stores
         (``wait_for_save``) itself, so this only polls events — matching the
-        inherited implementation. On 0.28.0 the store barrier is recorded
-        with ``torch.npu`` inside ``get_finished``, which was the single
-        submission entry point of that lane.
+        inherited implementation.
         """
-        if not vllm_version_is("0.28.0"):
-            return super().get_finished(finished_req_ids)
-
-        metadata = self._connector_metadata
-        if metadata is not None:
-            if metadata.load_cpu_blocks:
-                self._backend.launch_copy(
-                    metadata.load_cpu_blocks,
-                    metadata.load_gpu_blocks,
-                    is_store=False,
-                    event_idx=metadata.load_event,
-                    events_list=self._load_events,
-                )
-            if metadata.store_gpu_blocks:
-                store_compute_done = self._store_compute_done
-                if store_compute_done is None:
-                    store_compute_done = torch.npu.Event()
-                    self._store_compute_done = store_compute_done
-                store_compute_done.record(torch.npu.current_stream())
-                self._backend.launch_copy(
-                    metadata.store_gpu_blocks,
-                    metadata.store_cpu_blocks,
-                    is_store=True,
-                    event_idx=metadata.store_event,
-                    events_list=self._store_events,
-                    wait_event=store_compute_done,
-                )
-
-        finished_recving: set[str] = set()
-        if self._pending_load_event_indices:
-            load_watermark = self._poll_stream_events(is_store=False)
-            for event_idx in [
-                event_idx for event_idx in self._pending_load_event_indices if event_idx <= load_watermark
-            ]:
-                self._pending_load_event_indices.discard(event_idx)
-                req_ids = metadata.load_event_to_reqs.get(event_idx) if metadata is not None else None
-                if req_ids:
-                    finished_recving.update(req_ids)
-
-        if self._pending_store_event_indices:
-            store_watermark = self._poll_stream_events(is_store=True)
-            for event_idx in [
-                event_idx for event_idx in self._pending_store_event_indices if event_idx <= store_watermark
-            ]:
-                self._pending_store_event_indices.discard(event_idx)
-                self._completed_store_events[event_idx] = 1
-
-        return None, finished_recving or None
+        return super().get_finished(finished_req_ids)
 
     @staticmethod
     def _build_block_views(
