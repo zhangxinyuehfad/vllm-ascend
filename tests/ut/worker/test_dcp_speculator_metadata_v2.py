@@ -66,7 +66,10 @@ def _speculator(monkeypatch, kind, architecture, width, padded, step, use_dcp=Tr
         query_start_loc=torch.tensor([0, width, 2 * width, 2 * width, 2 * width], dtype=torch.int32),
         dcp_local_seq_lens=torch.zeros(4, dtype=torch.int32),
     )
-    spec.arange = torch.arange(5, dtype=torch.int32)
+    spec.arange_np = np.arange(5, dtype=np.int32)
+    # Upstream #56107 reads this in _build_attn_metadata; Ascend forces its own
+    # is_prefilling through the draft metadata factory, so the contents are unused.
+    spec.draft_is_prefilling = torch.zeros(4, dtype=torch.bool)
     spec.block_tables = SimpleNamespace(
         cp_size=8 if use_dcp else 1,
         cp_rank=1 if use_dcp else 0,
