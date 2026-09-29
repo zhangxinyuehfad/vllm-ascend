@@ -55,6 +55,7 @@ from vllm_ascend.attention.utils import (
     needs_layer_aware_fia_graph_replay,
     notify_kv_cache_written,
     split_decodes_and_prefills,
+    supports_kernel_block_spec,
     using_paged_attention,
 )
 from vllm_ascend.compilation.updatable_graph import (
@@ -143,7 +144,7 @@ class AscendAttentionBackend(AttentionBackend):
             for cache in kv_cache:
                 cache[dst_indices] = cache[src_indices]
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         if is_minimax_m3_fp8_kv_cache(get_current_vllm_config_or_none()):
             # Keep 128 as a common kernel block with M3 sparse/indexer caches.
