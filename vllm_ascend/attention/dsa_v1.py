@@ -33,6 +33,7 @@ from vllm_ascend.attention.utils import (
     maybe_save_kv_layer_to_connector,
     notify_kv_cache_written,
     split_decodes_and_prefills,
+    supports_kernel_block_spec,
     wait_for_kv_layer_from_connector,
 )
 from vllm_ascend.core.kv_cache_interface import AscendMLAAttentionSpec, get_storage_block_size
@@ -271,7 +272,7 @@ class AscendDSABackend(AttentionBackend):
             return AscendDSAPCPImpl
         return AscendDSAImpl
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         return [2, 4, 8, 16, 32, 64, 128]
 
@@ -281,7 +282,7 @@ class AscendDSAC4Backend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C4"
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         # Align with upstream's logical block-size contract: Ascend's physical
         # 32/64/128-token C4 pages represent 128/256/512 raw scheduler tokens.
@@ -293,7 +294,7 @@ class AscendDSAC128Backend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C128"
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         # Align with upstream's logical block-size contract: Ascend's physical
         # 32/64/128-token C128 pages represent 4096/8192/16384 raw scheduler tokens.
@@ -305,7 +306,7 @@ class AscendDSASWABackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_SWA"
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         return [32, 64, 128]
 
@@ -315,7 +316,7 @@ class AscendDSAC4StateBackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C4_STATE"
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         return [2, 4, 8]
 
@@ -325,7 +326,7 @@ class AscendDSAC128StateBackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C128_STATE"
 
-    @staticmethod
+    @supports_kernel_block_spec
     def get_supported_kernel_block_sizes() -> list[int]:
         if get_current_hardware_profile().supports(HardwareCapability.DSA_C128_STATE_SMALL_BLOCK_SIZES):
             return [4, 8, 16]
