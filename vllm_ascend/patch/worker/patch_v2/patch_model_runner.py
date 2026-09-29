@@ -8,6 +8,7 @@ from vllm.v1.worker.gpu import model_runner as upstream
 from vllm.v1.worker.gpu.dp_utils import dispatch_cg_and_sync_dp as _dispatch_cg_and_sync_dp
 
 from vllm_ascend.attention.context_parallel.common_cp import is_pcp_decode_sharding_enabled
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.utils import copy_kv_cache_blocks_inplace
 
 
@@ -92,7 +93,6 @@ def initialize_kv_cache(
     self.adaptive_verification = upstream.maybe_create_adaptive_verification_manager(
         enable_adaptive_verification=getattr(self.speculator, "enable_adaptive_verification", False),
         attn_groups=self.attn_groups,
-        attn_cg_support=attn_cg_support,
         req_states=self.req_states,
         query_start_loc=self.input_buffers.query_start_loc,
         num_bonus_tokens=self.model_state.num_new_sampled_tokens_per_step,
@@ -100,6 +100,7 @@ def initialize_kv_cache(
         vllm_config=self.vllm_config,
         target_layer_names=target_attn_layer_names,
         additional_attn_cg_support=additional_attn_cg_support,
+        **({"attn_cg_support": attn_cg_support} if vllm_version_is("0.30.0") else {}),
     )
 
     self.block_tables = upstream.BlockTables(
