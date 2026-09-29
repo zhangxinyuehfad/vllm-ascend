@@ -59,11 +59,11 @@ on:
         required: false
         type: string
         default: ''
-      publish_nightly_main:
+      publish:
         description: 'If true, commit-mode builds publish to the main repo (release: nightly-main tags; daily: dated CANN-versioned tags); if false, the image stays temp-only.'
         required: false
         type: boolean
-        default: false
+        default: true
       build_type:
         description: 'Build type (release/daily)'
         required: false
@@ -161,6 +161,8 @@ jobs:
   build-push-digest:
     name: build
     runs-on: ${{ matrix.runner_info.runner }}
+    outputs:
+      temp_only: ${{ steps.gc-tag.outputs.temp_only }}
     container:
       image: ${{ format('{0}:{1}-{2}-ubuntu22.04-py3.12', inputs.cann_swr_url, inputs.cann_image_version, inputs.soc) }}
       env:
@@ -373,6 +375,7 @@ jobs:
     # Quay.io/swr automatically cleans up untagged digests on a regular basis, with a cycle of approximately one hour. 
     # Add temporary tags to digests to prevent them from being removed.
     - name: Tag digest to prevent GC
+      id: gc-tag
       if: ${{ inputs.should_push }}
       run: |
         SUFFIX=""
@@ -380,9 +383,10 @@ jobs:
           SUFFIX="-${{ inputs.suffix }}"
         fi
         TEMP_ONLY=false
-        if [ -n "${{ inputs.vllm_commit }}" ] && [ "${{ inputs.publish_nightly_main }}" != "true" ]; then
+        if [ -n "${{ inputs.vllm_commit }}" ] && [ "${{ inputs.publish }}" != "true" ]; then
           TEMP_ONLY=true
         fi
+        echo "temp_only=$TEMP_ONLY" >> "$GITHUB_OUTPUT"
         if [ "$TEMP_ONLY" = "true" ]; then
           case "${{ inputs.vllm_commit }}" in
             v*) VLLM_SHORT="${{ inputs.vllm_commit }}" ;;
@@ -424,7 +428,7 @@ jobs:
   merge-image:
     runs-on: linux-amd64-cpu-4
     needs: build-push-digest
-    if: ${{ inputs.should_push && !(inputs.vllm_commit != '' && !inputs.publish_nightly_main) }}
+    if: ${{ inputs.should_push && needs.build-push-digest.outputs.temp_only != 'true' }}
     steps:
       - name: Download arm64 digests
         uses: actions/download-artifact@v8
@@ -624,7 +628,7 @@ jobs:
     name: merge-image-temp
     runs-on: linux-amd64-cpu-4
     needs: build-push-digest
-    if: ${{ inputs.should_push && inputs.vllm_commit != '' && !inputs.publish_nightly_main }}
+    if: ${{ inputs.should_push && needs.build-push-digest.outputs.temp_only == 'true' }}
     steps:
       - name: Download arm64 digests
         uses: actions/download-artifact@v8
