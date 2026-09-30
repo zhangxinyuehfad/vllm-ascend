@@ -656,16 +656,16 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
                 block_residual[:, self.block_write_idx, :].copy_(prefix_sum)
                 prefix_sum = None
 
-        hidden_states = self.input_layernorm(hidden_states)
-        if self.use_sequence_parallel:
-            hidden_states = sp_all_gather(hidden_states)
-            hidden_states = hidden_states[: positions.shape[0]]
-        hidden_states = self.self_attn(
-            hidden_states=hidden_states,
-            positions=positions,
-        )
-        if self.use_sequence_parallel and not self.fuse_o_proj_mm_reduce_scatter:
-            hidden_states = sp_reduce_scatter(hidden_states)
+            hidden_states = self.input_layernorm(hidden_states)
+            if self.use_sequence_parallel:
+                hidden_states = sp_all_gather(hidden_states)
+                hidden_states = hidden_states[: positions.shape[0]]
+            hidden_states = self.self_attn(
+                hidden_states=hidden_states,
+                positions=positions,
+            )
+            if self.use_sequence_parallel and not self.fuse_o_proj_mm_reduce_scatter:
+                hidden_states = sp_reduce_scatter(hidden_states)
 
             prefix_sum = hidden_states if prefix_sum is None else prefix_sum + hidden_states
             mlp_valid_blocks = self.prev_valid_blocks + (1 if self.is_block_write_layer else 0)
