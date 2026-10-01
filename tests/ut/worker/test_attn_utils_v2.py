@@ -53,6 +53,7 @@ from vllm_ascend.models.deepseek_v4 import model as deepseek_v4_model
 from vllm_ascend.patch.platform.patch_kv_cache_utils import (
     _get_kv_cache_config_deepseek_v4_main,
 )
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2 import attn_utils
 from vllm_ascend.worker.v2.model_states.default import AscendModelState
 
@@ -157,7 +158,7 @@ def test_main_allocator_attention_layout(
     impl = impl_cls.__new__(impl_cls)
     impl.sliding_window = extra_args.get("sliding_window")
     layer = SimpleNamespace(
-        get_attn_backend=lambda: (SparseAttentionBackend if cache_kind == "full_sparse" else AscendAttentionBackend),
+        get_attn_backend=lambda: SparseAttentionBackend if cache_kind == "full_sparse" else AscendAttentionBackend,
         kv_sharing_target_layer_name=None,
         num_heads=8,
         impl=impl,
@@ -1189,7 +1190,12 @@ def test_mrv2_builds_shared_dsa_metadata_for_each_execution_mode(
         )
     else:
         model_state = AscendModelState.__new__(AscendModelState)
-        model_state.max_model_len = 8
+        # vLLM main (#58149) made max_model_len a read-only property backed by
+        # model_config; v0.30.0 keeps the plain instance attribute.
+        if vllm_version_is("0.30.0"):
+            model_state.max_model_len = 8
+        else:
+            model_state.model_config = SimpleNamespace(max_model_len=8)
         model_state.vllm_config = SimpleNamespace(
             parallel_config=parallel_config,
         )
