@@ -407,16 +407,16 @@ jobs:
     #                 pipeline itself
     #   none        - ready-precise on a PR whose diff recommends no tests
     # if: >-
-    #   ${{
-    #     !cancelled() &&
-    #     needs.pre-commit.result == 'success' &&
-    #     needs.cpu-ut.result == 'success' &&
-    #     (
-    #       contains(github.event.pull_request.labels.*.name, 'main2main') ||
-    #       contains(github.event.pull_request.labels.*.name, 'ready-precise') ||
-    #       contains(github.event.pull_request.labels.*.name, 'ready-all')
-    #     )
-    #   }}
+      # ${{
+      #   !cancelled() &&
+      #   needs.pre-commit.result == 'success' &&
+      #   needs.cpu-ut.result == 'success' &&
+      #   (
+      #     contains(github.event.pull_request.labels.*.name, 'main2main') ||
+      #     contains(github.event.pull_request.labels.*.name, 'ready-precise') ||
+      #     contains(github.event.pull_request.labels.*.name, 'ready-all')
+      #   )
+      # }}
     if: >-
       ${{
         !cancelled() &&
