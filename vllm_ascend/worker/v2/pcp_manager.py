@@ -315,7 +315,7 @@ class AscendPCPManager(PCPManager):
 
     else:
 
-        def partition_batch(
+        def partition_batch(  # type: ignore[misc]
             self,
             input_batch: AscendInputBatch,
             batch_desc: BatchExecutionDescriptor,
@@ -519,7 +519,7 @@ class AscendPCPManager(PCPManager):
 
     else:
 
-        def restore_for_sampling(
+        def restore_for_sampling(  # type: ignore[misc]
             self,
             hidden_states: torch.Tensor,
             aux_hidden_states: list[torch.Tensor] | None,
