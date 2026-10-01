@@ -165,7 +165,7 @@ if vllm_version_is("0.30.0"):
 
 else:
 
-    def _apply_ascend_attn_res(
+    def _apply_ascend_attn_res(  # type: ignore[misc]
         prefix_sum: torch.Tensor,
         block_residual: torch.Tensor,
         proj: ReplicatedLinear,
@@ -683,7 +683,7 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
 
     else:
 
-        def forward_attn_residual(
+        def forward_attn_residual(  # type: ignore[misc]
             self,
             positions: torch.Tensor,
             hidden_states: torch.Tensor,
@@ -698,7 +698,7 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
             and the layer returns ``(prefix_sum, block_residual, hidden_states)``.
             """
             prefix_sum: torch.Tensor | None = hidden_states
-            hidden_states = _apply_ascend_attn_res(
+            hidden_states = _apply_ascend_attn_res(  # type: ignore[call-arg]
                 prefix_sum,
                 block_residual,
                 self.self_attention_res_proj,
@@ -728,7 +728,7 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
                 prefix_delta = hidden_states
 
             mlp_valid_blocks = self.prev_valid_blocks + (1 if self.is_block_write_layer else 0)
-            hidden_states = _apply_ascend_attn_res(
+            hidden_states = _apply_ascend_attn_res(  # type: ignore[call-arg]
                 prefix_sum,
                 block_residual,
                 self.mlp_res_proj,
@@ -988,7 +988,7 @@ class AscendKimiLinearModel(UpstreamKimiLinearModel):
                     }
                 )
 
-            hidden_states = _apply_ascend_attn_res(
+            hidden_states = _apply_ascend_attn_res(  # type: ignore[call-arg]
                 hidden_states,
                 residual,
                 self.output_attn_res_proj,
