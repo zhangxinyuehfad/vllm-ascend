@@ -84,7 +84,7 @@ from vllm_ascend.device.hardware_profile import HardwareCapability, get_current_
 from vllm_ascend.ops.kimi_kda import AscendKimiK3DeltaAttention  # type: ignore[import-untyped]
 from vllm_ascend.ops.linear_op import KimiOProjMMReduceScatterOp
 from vllm_ascend.quantization.methods.w8a8.w8a8_mxfp8 import AscendW8A8MXFP8DynamicLinearMethod
-from vllm_ascend.utils import get_rotation_path
+from vllm_ascend.utils import get_rotation_path, vllm_version_is
 
 if HAS_TRITON:
     from vllm_ascend.ops.triton.kimi_k3.attention_residual import (  # type: ignore[import-untyped]
