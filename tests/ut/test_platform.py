@@ -26,8 +26,8 @@ from vllm_ascend.utils import (
     ASCEND_QUANTIZATION_METHOD,
     COMPRESSED_TENSORS_METHOD,
     AscendDeviceType,
-    vllm_version_is,
     dsv4_skips_indexer_topk,
+    vllm_version_is,
 )
 
 

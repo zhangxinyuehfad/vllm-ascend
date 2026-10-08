@@ -356,7 +356,7 @@ def test_kimi_model_selects_materialized_or_raw_dspark_aux_stream(monkeypatch):
 
     else:
 
-        class RecordingLayer(nn.Module):
+        class RecordingLayer(nn.Module):  # type: ignore[no-redef]
             def __init__(self, layer_idx: int) -> None:
                 super().__init__()
                 self.layer_idx = layer_idx
