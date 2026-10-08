@@ -86,6 +86,27 @@ def _make_pcp_config(
     )
 
 
+def _partition_batch(manager, batch, *, padded_num_tokens=None, batch_desc=None):
+    """Call AscendPCPManager.partition_batch across the v0.30.0/main API split.
+
+    vLLM main (#57980) replaced the ``padded_num_tokens``/``padded_num_reqs``
+    keyword arguments with a ``BatchExecutionDescriptor``. Passing a descriptor
+    with ``cg_mode=CUDAGraphMode.NONE`` reproduces the v0.30.0 defaults (no
+    token/request padding), so callers that previously passed no overrides keep
+    the same behavior.
+    """
+    if vllm_version_is("0.30.0"):
+        kwargs = {} if padded_num_tokens is None else {"padded_num_tokens": padded_num_tokens}
+        return manager.partition_batch(batch, **kwargs)
+    if batch_desc is None:
+        batch_desc = BatchExecutionDescriptor(
+            CUDAGraphMode.NONE,
+            int(getattr(batch, "num_tokens", 0)),
+            None,
+        )
+    return manager.partition_batch(batch, batch_desc)
+
+
 @pytest.mark.parametrize(
     "cudagraph_mode,speculative,pcp_size,dcp_size,expected_sharding",
     [

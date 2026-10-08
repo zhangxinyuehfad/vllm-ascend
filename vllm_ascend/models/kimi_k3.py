@@ -661,7 +661,7 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
 
     else:
 
-        def forward(
+        def forward(  # type: ignore[misc]
             self,
             positions: torch.Tensor,
             hidden_states: torch.Tensor,
@@ -775,7 +775,7 @@ class AscendKimiDecoderLayer(UpstreamKimiDecoderLayer):
 
     else:
 
-        def forward_attn_residual(
+        def forward_attn_residual(  # type: ignore[misc]
             self,
             positions: torch.Tensor,
             hidden_states: torch.Tensor,
@@ -1165,9 +1165,6 @@ class AscendKimiLinearModel(UpstreamKimiLinearModel):
 
             if not get_pp_group().is_last_rank and prefix_delta is not None:
                 hidden_states = hidden_states + prefix_delta
-                if not materialized_aux:
-                    # Publish the completed raw prefix at the PP boundary once.
-                    self._maybe_add_hidden_state(aux_hidden_states, self.end_layer, hidden_states, None)
             if not get_pp_group().is_last_rank:
                 if self.use_sequence_parallel:
                     # The next PP rank expects full-sequence tensors; close the
@@ -1182,7 +1179,10 @@ class AscendKimiLinearModel(UpstreamKimiLinearModel):
                     aux_hidden_states,
                 )
 
-            hidden_states, final_prefix, _ = torch.ops._C_ascend.attn_res_fwd(
+            # The loop above already captured aux for every ``(layer_idx + 1)``
+            # in ``aux_hidden_state_layers``, including ``end_layer``; upstream
+            # vLLM main does not add a boundary/final aux slot on top of it.
+            hidden_states, _, _ = torch.ops._C_ascend.attn_res_fwd(
                 hidden_states,
                 prefix_delta,
                 residual,
@@ -1191,8 +1191,6 @@ class AscendKimiLinearModel(UpstreamKimiLinearModel):
                 self.output_attn_res_norm.variance_epsilon,
                 attn_res_block_num,
             )
-            if not materialized_aux and prefix_delta is not None:
-                self._maybe_add_hidden_state(aux_hidden_states, self.end_layer, final_prefix, None)
             if materialized_aux and self.end_layer in self.aux_hidden_state_layers:
                 aux_hidden_states.append(hidden_states)
         if self.use_sequence_parallel:

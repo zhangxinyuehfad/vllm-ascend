@@ -1711,7 +1711,6 @@ def _validate_pcp_dcp_config(vllm_config: VllmConfig) -> None:
         parallel_config.prefill_context_parallel_size,
         parallel_config.decode_context_parallel_size,
     )
-            )
 
 
 def _validate_aux_output_config(vllm_config: VllmConfig) -> None:
