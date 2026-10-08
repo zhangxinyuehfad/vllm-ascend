@@ -1118,7 +1118,12 @@ def test_v2_fused_offload_prepares_request_ownership_and_restores_tails(monkeypa
         parallel_config=SimpleNamespace(prefill_context_parallel_size=1),
         cache_config=SimpleNamespace(block_size=128),
     )
-    state.max_model_len = 4096
+    # vLLM main (#58149) made max_model_len a read-only property backed by
+    # model_config; v0.30.0 keeps the plain instance attribute.
+    if vllm_version_is("0.30.0"):
+        state.max_model_len = 4096
+    else:
+        state.model_config = SimpleNamespace(max_model_len=4096)
     state.pcp_manager = None
     state._offload_live_req_ids = {"request-1": 0}
     state._offload_draft_attn_groups = []

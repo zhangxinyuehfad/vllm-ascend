@@ -383,7 +383,7 @@ jobs:
   select-tests:
     needs:
       - pre-commit
-      # - cpu-ut
+      - cpu-ut
       - recommend-tests
     # select-tests is the single producer of test_groups / base_sha / has_tests.
     # It runs only when a run-enabling label (ready-precise / ready-all /
