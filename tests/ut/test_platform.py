@@ -985,7 +985,12 @@ class TestNPUPlatform(TestBase):
                     )
 
                 if should_align:
-                    vllm_config.update_sizes_for_sequence_parallelism.assert_called_once_with([1, 2, 4, 8])
+                    # vLLM #60517 removed the method on main; platform inlines
+                    # the tp-multiple filtering instead.
+                    if vllm_version_is("0.30.0"):
+                        vllm_config.update_sizes_for_sequence_parallelism.assert_called_once_with([1, 2, 4, 8])
+                    else:
+                        vllm_config.update_sizes_for_sequence_parallelism.assert_not_called()
                     self.assertEqual(compilation_config.cudagraph_capture_sizes, [8])
                     self.assertEqual(compilation_config.max_cudagraph_capture_size, 8)
                 else:
