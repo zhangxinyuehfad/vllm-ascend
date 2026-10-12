@@ -39,7 +39,6 @@ from vllm_ascend.attention.attention_v1 import (
     AscendAttentionState,
     AscendMetadata,
 )
-from vllm_ascend.attention.utils import supports_kernel_block_spec
 
 MASK_TYPE_NORM_COMPRESS_SELF_ATTENTION = 3
 MASK_TYPE_NORM_COMPRESS_PAGED_ATTENTION = 5
@@ -95,8 +94,8 @@ class AscendAttentionBackend310(AscendAttentionBackend):
         """
         return AscendAttentionMetadataBuilder310
 
-    @supports_kernel_block_spec
-    def get_supported_kernel_block_sizes() -> list[int]:  # type: ignore[misc]
+    @staticmethod
+    def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
         return [128, 64]
 
     @classmethod
