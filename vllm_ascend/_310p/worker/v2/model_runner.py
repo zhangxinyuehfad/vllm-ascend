@@ -812,14 +812,17 @@ class NPUModelRunner310V2(NPUModelRunner):
         )
         initialize_mamba_ssu_backend(self.vllm_config.mamba_config, self.kv_cache_config)
 
+        # vLLM #60517 removed the `tensor_parallel_size` parameter on main.
         cudagraph_mode = self.compilation_config.resolve_cudagraph_mode_and_sizes(
             attn_cg_support.min_cg_support,
             attn_cg_support.min_cg_attn_backend,
             self.decode_query_len,
             use_v2_model_runner=True,
-            tensor_parallel_size=self.parallel_config.tensor_parallel_size,
             kv_cache_config=kv_cache_config,
             max_num_reqs=self.max_num_reqs,
+            **(
+                {"tensor_parallel_size": self.parallel_config.tensor_parallel_size} if vllm_version_is("0.30.0") else {}
+            ),
         )
         self.cudagraph_manager = ModelAclGraphManager310(
             self.vllm_config,

@@ -1318,7 +1318,13 @@ def _setup_compile_backend(
         and requires_tp_aligned_capture_sizes
     ):
         original_sizes = compilation_config.cudagraph_capture_sizes
-        sp_aclgraph_sizes = vllm_config.update_sizes_for_sequence_parallelism(original_sizes)
+        # vLLM #60517 removed `update_sizes_for_sequence_parallelism` on main;
+        # inline its behaviour (keep sizes that are multiples of tp_size).
+        if vllm_version_is("0.30.0"):
+            sp_aclgraph_sizes = vllm_config.update_sizes_for_sequence_parallelism(original_sizes)
+        else:
+            tp_size = vllm_config.parallel_config.tensor_parallel_size
+            sp_aclgraph_sizes = [size for size in original_sizes if size % tp_size == 0]
         if not sp_aclgraph_sizes:
             raise AssertionError(
                 f"cudagraph_capture_sizes {original_sizes} does not contain"

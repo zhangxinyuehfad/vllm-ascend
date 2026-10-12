@@ -31,6 +31,7 @@ from vllm.v1.worker.gpu.spec_decode.mtp.speculator import MTPSpeculator
 from vllm_ascend._310p.ops.rotary_embedding import AscendRotaryEmbedding310
 from vllm_ascend._310p.worker.v2.spec_utils import set_draft_step_host
 from vllm_ascend.attention.attention_v1 import AscendAttentionState
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2.attn_utils import build_attn_metadata_factory
 from vllm_ascend.worker.v2.spec_decode.autoregressive.speculator import (
     AscendAutoRegressiveSpeculator,
@@ -270,9 +271,15 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
         """Skip Ascend metadata H2D under ACLGraph capture (pageable memcpy ban)."""
         # Call GPU AR generate_draft (sample + update_draft_inputs) without the
         # Ascend post-step ``seq_lens_cpu.copy_`` which is illegal while capturing.
-        from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
-            AutoRegressiveSpeculator,
-        )
+        # vLLM #60335 renamed `autoregressive` to `target_dependent_ar` on main.
+        if vllm_version_is("0.30.0"):
+            from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
+                AutoRegressiveSpeculator,
+            )
+        else:
+            from vllm.v1.worker.gpu.spec_decode.target_dependent_ar.speculator import (
+                TargetDependentARSpeculator as AutoRegressiveSpeculator,
+            )
 
         AutoRegressiveSpeculator._generate_draft(
             self,
