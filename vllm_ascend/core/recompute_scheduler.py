@@ -468,11 +468,10 @@ class RecomputeScheduler(Scheduler):
             # (#58947) split it into `kv_holding_waiting` (a queue) and
             # `deferred_waiting` (a set), and renamed the blocked-status helper.
             if vllm_version_is("0.30.0"):
-                step_skipped_waiting = create_request_queue(self.policy)
-                step_skipped_kv_holding = None
+                legacy_skipped_waiting = create_request_queue(self.policy)
 
                 def _skip_request(from_queue) -> None:
-                    step_skipped_waiting.prepend_request(from_queue.pop_request())
+                    legacy_skipped_waiting.prepend_request(from_queue.pop_request())
 
             else:
                 step_skipped_waiting: deque[Request] = deque()
@@ -888,8 +887,8 @@ class RecomputeScheduler(Scheduler):
 
             # re-queue requests skipped in this pass ahead of older skipped items.
             if vllm_version_is("0.30.0"):
-                if step_skipped_waiting:
-                    self.skipped_waiting.prepend_requests(step_skipped_waiting)
+                if legacy_skipped_waiting:
+                    self.skipped_waiting.prepend_requests(legacy_skipped_waiting)
             else:
                 if step_skipped_kv_holding:
                     self.kv_holding_waiting.prepend_requests(step_skipped_kv_holding)
