@@ -818,7 +818,12 @@ class TestNPUPlatform(TestBase):
                 with patch("vllm_ascend.platform._get_reduced_cg_cap", return_value=None):
                     self.platform.apply_config_platform_defaults(vllm_config)
 
-                self.assertEqual(pass_config.sp_min_token_num, 1)
+                if vllm_version_is("0.30.0"):
+                    self.assertEqual(pass_config.sp_min_token_num, 1)
+                else:
+                    # vLLM #60517 removed the PassConfig SP fields on main, so
+                    # the Ascend SP-threshold default no longer applies.
+                    self.assertIsNone(pass_config.sp_min_token_num)
 
                 pass_config.sp_min_token_num = 512
                 with patch("vllm_ascend.platform._get_reduced_cg_cap", return_value=None):
