@@ -352,9 +352,13 @@ class NPUPlatform(Platform):
         # Upstream derives this threshold only for CUDA/XPU. Without an Ascend
         # default, an explicit SP/MMRS request is disabled during VllmConfig
         # validation before the graph fusion pass can observe it.
-        pass_config = vllm_config.compilation_config.pass_config
-        if (pass_config.enable_sp or pass_config.fuse_gemm_comms) and pass_config.sp_min_token_num is None:
-            pass_config.sp_min_token_num = 1
+        # vLLM #60517 removed PassConfig.enable_sp/fuse_gemm_comms/
+        # sp_min_token_num on main; the pass-based SP this defaulted no longer
+        # exists there.
+        if vllm_version_is("0.30.0"):
+            pass_config = vllm_config.compilation_config.pass_config
+            if (pass_config.enable_sp or pass_config.fuse_gemm_comms) and pass_config.sp_min_token_num is None:
+                pass_config.sp_min_token_num = 1
 
         # TODO: Remove this memory-saving capture-size override and its ceiling
         # restoration once MC2 is no longer used.
