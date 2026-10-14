@@ -73,7 +73,9 @@ def test_dspark_sync_matches_global_draft_requests(monkeypatch, replicated_pcp):
             num_tokens_across_dp=torch.tensor([4, 4]), uniform_token_count=1, eager=False, num_reqs=4
         )
     monkeypatch.setattr(DSparkSpeculator, "propose", parent_propose)
-    assert spec.propose(batch, *[None for _ in range(10)], dp_sync=target_sync) == "draft"
+    # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
+    dp_sync_kwarg = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
+    assert spec.propose(batch, *[None for _ in range(10)], **{dp_sync_kwarg: target_sync}) == "draft"
 
 
 def make_target():

@@ -27,6 +27,7 @@ from vllm.config.compilation import CUDAGraphMode
 from vllm.v1.worker.gpu.spec_decode.dflash.speculator import DFlashSpeculator
 
 import vllm_ascend.worker.v2.spec_decode.dflash.speculator as dflash_module
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2.spec_decode import init_speculator
 from vllm_ascend.worker.v2.spec_decode.dflash.speculator import AscendDFlashSpeculator
 from vllm_ascend.worker.v2.spec_decode.dflash2.speculator import (
@@ -190,9 +191,11 @@ def test_dflash_profiling_does_not_reuse_target_dp_counts(monkeypatch, dummy_run
 
     monkeypatch.setattr(DFlashSpeculator, "propose", propose)
     monkeypatch.setattr(dflash_module, "build_attn_metadata_wrapper", nullcontext)
+    # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
+    dp_sync_kwarg = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
     assert (
         speculator.propose(
-            batch, *[None] * 10, dp_sync=sync_state, dummy_run=dummy_run, skip_attn_for_dummy_run=skip_attn
+            batch, *[None] * 10, **{dp_sync_kwarg: sync_state}, dummy_run=dummy_run, skip_attn_for_dummy_run=skip_attn
         )
         is result
     )

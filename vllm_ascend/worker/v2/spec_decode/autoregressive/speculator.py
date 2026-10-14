@@ -310,50 +310,31 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
         self.prefill_cudagraph_manager.update_stream = self.update_stream
         self.decode_cudagraph_manager.update_stream = self.update_stream
 
-    def propose(
-        self,
-        input_batch: InputBatch,
-        attn_metadata: dict[str, Any],
-        slot_mappings: dict[str, torch.Tensor],
-        # [num_tokens, hidden_size]
-        last_hidden_states: torch.Tensor,
-        # num_layers x [num_tokens, hidden_size]
-        aux_hidden_states: list[torch.Tensor] | None,
-        # [num_reqs]
-        num_sampled: torch.Tensor,
-        # [num_reqs]
-        num_rejected: torch.Tensor,
-        # [max_num_reqs]
-        last_sampled: torch.Tensor,
-        # [max_num_reqs]
-        next_prefill_tokens: torch.Tensor,
-        # [max_num_reqs]
-        temperature: torch.Tensor,
-        # [max_num_reqs]
-        seeds: torch.Tensor,
-        dp_sync: Any = None,
-        dummy_run: bool = False,
-        skip_attn_for_dummy_run: bool = False,
-        mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None = None,
-        is_profile: Any = None,
-    ):
-        """Override GPU EagleSpeculator.propose for Ascend NPUs,
-        because npu attention metadata needs more information,
-        we need to cache input_batch, so we can use it later in
-        generate_draft.
-        """
-        self.input_batch = input_batch
-        # Replicated drafts use global tokens, unlike the PCP-local target.
-        # Every DP rank must take the draft sync, including decode and idle ranks.
-        sync_state = None if self.replicated_pcp else dp_sync
-        # wrap build_attn_metadata to use Ascend attention metadata building.
-        # so we can call super().propose() directly.
-        with (
-            disable_target_pcp_for_replicated_draft(self),
-            build_attn_metadata_wrapper(),
-            torch_gather_wrapper(),
+    # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main, and
+    # vLLM #60335 added `num_speculative_tokens`. Define the per-version public
+    # signature and body.
+    if vllm_version_is("0.30.0"):
+
+        def propose(
+            self,
+            input_batch: InputBatch,
+            attn_metadata: dict[str, Any],
+            slot_mappings: dict[str, torch.Tensor],
+            last_hidden_states: torch.Tensor,
+            aux_hidden_states: list[torch.Tensor] | None,
+            num_sampled: torch.Tensor,
+            num_rejected: torch.Tensor,
+            last_sampled: torch.Tensor,
+            next_prefill_tokens: torch.Tensor,
+            temperature: torch.Tensor,
+            seeds: torch.Tensor,
+            dp_sync: Any = None,
+            dummy_run: bool = False,
+            skip_attn_for_dummy_run: bool = False,
+            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None = None,
+            is_profile: Any = None,
         ):
-            return super().propose(
+            return self._propose_impl(
                 input_batch,
                 attn_metadata,
                 slot_mappings,
@@ -365,12 +346,164 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
                 next_prefill_tokens,
                 temperature,
                 seeds,
-                sync_state,
+                dp_sync,
                 dummy_run,
                 skip_attn_for_dummy_run,
                 mm_inputs,
-                is_profile=is_profile,
+                is_profile,
             )
+
+        def _propose_impl(
+            self,
+            input_batch: InputBatch,
+            attn_metadata: dict[str, Any],
+            slot_mappings: dict[str, torch.Tensor],
+            last_hidden_states: torch.Tensor,
+            aux_hidden_states: list[torch.Tensor] | None,
+            num_sampled: torch.Tensor,
+            num_rejected: torch.Tensor,
+            last_sampled: torch.Tensor,
+            next_prefill_tokens: torch.Tensor,
+            temperature: torch.Tensor,
+            seeds: torch.Tensor,
+            dp_sync: Any,
+            dummy_run: bool,
+            skip_attn_for_dummy_run: bool,
+            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None,
+            is_profile: Any,
+        ):
+            """Override GPU EagleSpeculator.propose for Ascend NPUs,
+            because npu attention metadata needs more information,
+            we need to cache input_batch, so we can use it later in
+            generate_draft.
+            """
+            self.input_batch = input_batch
+            # Replicated drafts use global tokens, unlike the PCP-local target.
+            # Every DP rank must take the draft sync, including decode and idle ranks.
+            sync_state = None if self.replicated_pcp else dp_sync
+            # wrap build_attn_metadata to use Ascend attention metadata building.
+            # so we can call super().propose() directly.
+            with (
+                disable_target_pcp_for_replicated_draft(self),
+                build_attn_metadata_wrapper(),
+                torch_gather_wrapper(),
+            ):
+                return super().propose(
+                    input_batch,
+                    attn_metadata,
+                    slot_mappings,
+                    last_hidden_states,
+                    aux_hidden_states,
+                    num_sampled,
+                    num_rejected,
+                    last_sampled,
+                    next_prefill_tokens,
+                    temperature,
+                    seeds,
+                    sync_state,
+                    dummy_run,
+                    skip_attn_for_dummy_run,
+                    mm_inputs,
+                    is_profile=is_profile,
+                )
+
+    else:
+
+        def propose(
+            self,
+            input_batch: InputBatch,
+            attn_metadata: dict[str, Any],
+            slot_mappings: dict[str, torch.Tensor],
+            last_hidden_states: torch.Tensor,
+            aux_hidden_states: list[torch.Tensor] | None,
+            num_sampled: torch.Tensor,
+            num_rejected: torch.Tensor,
+            last_sampled: torch.Tensor,
+            next_prefill_tokens: torch.Tensor,
+            temperature: torch.Tensor,
+            seeds: torch.Tensor,
+            dp_sync_state: Any = None,
+            dummy_run: bool = False,
+            skip_attn_for_dummy_run: bool = False,
+            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None = None,
+            is_profile: Any = None,
+            num_speculative_tokens: int | None = None,
+        ):
+            return self._propose_impl(
+                input_batch,
+                attn_metadata,
+                slot_mappings,
+                last_hidden_states,
+                aux_hidden_states,
+                num_sampled,
+                num_rejected,
+                last_sampled,
+                next_prefill_tokens,
+                temperature,
+                seeds,
+                dp_sync_state,
+                dummy_run,
+                skip_attn_for_dummy_run,
+                mm_inputs,
+                is_profile,
+                num_speculative_tokens,
+            )
+
+        def _propose_impl(
+            self,
+            input_batch: InputBatch,
+            attn_metadata: dict[str, Any],
+            slot_mappings: dict[str, torch.Tensor],
+            last_hidden_states: torch.Tensor,
+            aux_hidden_states: list[torch.Tensor] | None,
+            num_sampled: torch.Tensor,
+            num_rejected: torch.Tensor,
+            last_sampled: torch.Tensor,
+            next_prefill_tokens: torch.Tensor,
+            temperature: torch.Tensor,
+            seeds: torch.Tensor,
+            dp_sync: Any,
+            dummy_run: bool,
+            skip_attn_for_dummy_run: bool,
+            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None,
+            is_profile: Any,
+            num_speculative_tokens: int | None,
+        ):
+            """Override GPU EagleSpeculator.propose for Ascend NPUs,
+            because npu attention metadata needs more information,
+            we need to cache input_batch, so we can use it later in
+            generate_draft.
+            """
+            self.input_batch = input_batch
+            # Replicated drafts use global tokens, unlike the PCP-local target.
+            # Every DP rank must take the draft sync, including decode and idle ranks.
+            sync_state = None if self.replicated_pcp else dp_sync
+            # wrap build_attn_metadata to use Ascend attention metadata building.
+            # so we can call super().propose() directly.
+            with (
+                disable_target_pcp_for_replicated_draft(self),
+                build_attn_metadata_wrapper(),
+                torch_gather_wrapper(),
+            ):
+                return super().propose(
+                    input_batch,
+                    attn_metadata,
+                    slot_mappings,
+                    last_hidden_states,
+                    aux_hidden_states,
+                    num_sampled,
+                    num_rejected,
+                    last_sampled,
+                    next_prefill_tokens,
+                    temperature,
+                    seeds,
+                    sync_state,
+                    dummy_run,
+                    skip_attn_for_dummy_run,
+                    mm_inputs,
+                    is_profile=is_profile,
+                    num_speculative_tokens=num_speculative_tokens,
+                )
 
     def set_attn(
         self,
