@@ -247,6 +247,43 @@ def test_ensure_align_ctx_falls_back_to_mamba_ctx():
     assert state._ensure_align_ctx(kv_cache_config, [0], ()) is ctx
 
 
+@pytest.mark.skipif(vllm_version_is("0.30.0"), reason="main-only regression: _ensure_align_ctx moved")
+def test_ensure_align_ctx_lazily_recreates_mamba_ctx():
+    # The align context can be absent when preprocess_state runs (e.g. it was
+    # torn down by the CUDA-graph memory profiler), so the main-lane override
+    # must lazily (re)create it like the v0.30.0 base helper did.
+    spec = _mamba_spec()
+    kv_cache_config = _kv_cache_config(spec)
+    state = _make_defer_state(kv_cache_config)
+    state._mamba_state_copy_funcs = None
+    state.max_num_reqs = 4
+    state.device = torch.device("cpu")
+    state.vllm_config = SimpleNamespace(compilation_config=SimpleNamespace(static_forward_context={}))
+    copy_funcs = {"mamba": [MagicMock()]}
+    state.model = SimpleNamespace(get_mamba_state_copy_funcs=MagicMock(return_value=copy_funcs))
+
+    ctx = MagicMock()
+    ctx.is_initialized = False
+    with (
+        patch(
+            "vllm_ascend.worker.v2.model_states.mamba_hybrid.get_mamba_groups",
+            return_value={spec: [0]},
+        ),
+        patch("vllm_ascend.worker.v2.model_states.mamba_hybrid.validate_mamba_state_copy_funcs"),
+        patch(
+            "vllm_ascend.worker.v2.model_states.mamba_hybrid.MambaSpecDecodeGPUContext.create",
+            return_value=ctx,
+        ) as mock_create,
+    ):
+        result = state._ensure_align_ctx(kv_cache_config, [0], (torch.zeros(3, dtype=torch.int32),))
+
+    assert result is ctx
+    assert state._mamba_ctx is ctx
+    assert state._mamba_state_copy_funcs is copy_funcs
+    mock_create.assert_called_once()
+    ctx.initialize_from_forward_context.assert_called_once()
+
+
 @patch("vllm.v1.worker.mamba_utils.precopy_mamba_align_fused_kernel")
 def test_do_mamba_copy_for_layer_launches_one_sliced_kernel(mock_precopy_kernel):
     spec = _mamba_spec()
