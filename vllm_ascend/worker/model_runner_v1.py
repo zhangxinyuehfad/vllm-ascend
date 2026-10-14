@@ -5000,7 +5000,11 @@ class NPUModelRunner(GPUModelRunner):
                 | AscendDraftModelProposer,
             )
             kernel_block_sizes = self.kernel_block_sizes
-            if isinstance(self.drafter, AscendDSparkProposer):
+            if isinstance(self.drafter, AscendDSparkProposer) or not vllm_version_is("0.30.0"):
+                # On main, create_metadata_builders() selects the kernel block
+                # size via select_common_block_size(), which requires an int.
+                # 310P keeps per-group candidate lists (e.g. [[128], [0]]), so
+                # collapse each group to its first candidate.
                 sizes = kernel_block_sizes if isinstance(kernel_block_sizes, list) else [kernel_block_sizes]
                 draft_kernel_block_sizes = [
                     int(size[0] if isinstance(size, (list, tuple)) else size) for size in sizes
