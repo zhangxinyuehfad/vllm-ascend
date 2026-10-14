@@ -23,6 +23,7 @@ from vllm.v1.worker.gpu.model_states.mamba_hybrid import MambaHybridModelState
 from vllm_ascend.core.kv_cache_interface import AscendMLAAttentionSpec
 from vllm_ascend.device.hardware import AscendDeviceType
 from vllm_ascend.device.hardware_profile import get_hardware_profile
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2 import attn_utils
 from vllm_ascend.worker.v2.attn_utils import (
     _align_hybrid_attention_page_sizes,
@@ -204,7 +205,12 @@ def test_layerwise_connector_defers_mamba_pre_copy(mock_has_group, mock_get_grou
     kv_cache_config = _kv_cache_config(spec)
     state = _make_defer_state(kv_cache_config)
     ctx = MagicMock()
-    state._ensure_align_ctx = MagicMock(return_value=ctx)
+    if vllm_version_is("0.30.0"):
+        state._ensure_align_ctx = MagicMock(return_value=ctx)
+    else:
+        # vLLM main removed `MambaHybridModelState._ensure_align_ctx`; the
+        # Ascend override must resolve the context built in initialize_kv_cache.
+        state._mamba_ctx = ctx
     input_batch = SimpleNamespace(
         num_reqs=2,
         idx_mapping=torch.arange(2, dtype=torch.int32),
@@ -226,6 +232,19 @@ def test_layerwise_connector_defers_mamba_pre_copy(mock_has_group, mock_get_grou
         state.do_mamba_copy_for_layer("linear_attn")
     state.preprocess_state(input_batch, (), kv_cache_config, num_computed)
     connector.finish_mamba_state_copy.assert_called_once()
+
+
+@pytest.mark.skipif(vllm_version_is("0.30.0"), reason="main-only regression: _ensure_align_ctx moved")
+def test_ensure_align_ctx_falls_back_to_mamba_ctx():
+    # vLLM main removed `MambaHybridModelState._ensure_align_ctx`; the Ascend
+    # override must return the context built in initialize_kv_cache instead of
+    # calling the (now absent) inherited helper.
+    spec = _mamba_spec()
+    kv_cache_config = _kv_cache_config(spec)
+    state = _make_defer_state(kv_cache_config)
+    ctx = MagicMock()
+    state._mamba_ctx = ctx
+    assert state._ensure_align_ctx(kv_cache_config, [0], ()) is ctx
 
 
 @patch("vllm.v1.worker.mamba_utils.precopy_mamba_align_fused_kernel")
