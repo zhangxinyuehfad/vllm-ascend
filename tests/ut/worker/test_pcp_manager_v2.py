@@ -974,12 +974,14 @@ def test_validate_config_rejects_unsupported_speculator_options(
 
 def test_main2main_v2_overrides_accept_new_upstream_keywords() -> None:
     """Lock the keyword contracts added by vLLM #53694 and #53869."""
+    # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
+    dp_sync_param = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
     for speculator_cls in (
         AscendAutoRegressiveSpeculator,
         AscendDFlashSpeculator,
         AscendDSparkSpeculator,
     ):
-        assert "dp_sync" in signature(speculator_cls.propose).parameters
+        assert dp_sync_param in signature(speculator_cls.propose).parameters
     assert "pcp_manager" in signature(ModelAclGraphManager.capture).parameters
 
 

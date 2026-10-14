@@ -634,10 +634,48 @@ def test_propose_replicated_pcp_disables_dp_sync():
         ),
         patch.object(AutoRegressiveSpeculator, "propose", return_value=expected) as parent_propose,
     ):
-        result = speculator.propose(input_batch, *args, dp_sync=dp_sync)
+        # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
+        dp_sync_kwarg = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
+        result = speculator.propose(input_batch, *args, **{dp_sync_kwarg: dp_sync})
     assert speculator.input_batch is input_batch
     assert parent_propose.call_args.args[11] is None
     assert result is expected
+
+
+def test_propose_accepts_main_dp_sync_state_and_num_speculative_tokens():
+    # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main and
+    # vLLM #60335 added `num_speculative_tokens`; both are keyword-only upstream.
+    speculator = AscendAutoRegressiveSpeculator.__new__(AscendAutoRegressiveSpeculator)
+    speculator.replicated_pcp = False
+    input_batch = object()
+    args = [object() for _ in range(10)]
+    dp_sync = object()
+    expected = object()
+    with (
+        patch(
+            "vllm_ascend.worker.v2.spec_decode.autoregressive.speculator.disable_target_pcp_for_replicated_draft",
+            return_value=nullcontext(),
+        ),
+        patch(
+            "vllm_ascend.worker.v2.spec_decode.autoregressive.speculator.build_attn_metadata_wrapper",
+            return_value=nullcontext(),
+        ),
+        patch(
+            "vllm_ascend.worker.v2.spec_decode.autoregressive.speculator.torch_gather_wrapper",
+            return_value=nullcontext(),
+        ),
+        patch.object(AutoRegressiveSpeculator, "propose", return_value=expected) as parent_propose,
+    ):
+        if vllm_version_is("0.30.0"):
+            result = speculator.propose(input_batch, *args, dp_sync=dp_sync)
+        else:
+            result = speculator.propose(input_batch, *args, dp_sync_state=dp_sync, num_speculative_tokens=2)
+    assert result is expected
+    assert parent_propose.call_args.args[11] is dp_sync
+    if vllm_version_is("0.30.0"):
+        assert "num_speculative_tokens" not in parent_propose.call_args.kwargs
+    else:
+        assert parent_propose.call_args.kwargs.get("num_speculative_tokens") == 2
 
 
 def test_propose_consumes_restored_global_inputs():
