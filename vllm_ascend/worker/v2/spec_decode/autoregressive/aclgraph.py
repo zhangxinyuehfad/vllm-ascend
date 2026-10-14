@@ -139,6 +139,8 @@ class AutoRegressiveAclGraphManager(SpeculatorCudaGraphManager):
                     BatchExecutionDescriptor(cg_mode=cg_mode, num_tokens=num_tokens, num_reqs=num_reqs),
                     num_tokens_across_dp,
                     seq_lens_cpu_upper_bound,
+                    # vLLM #60335 added `num_speculative_steps` on main.
+                    *(() if vllm_version_is("0.30.0") else (self.speculator.num_speculative_steps,)),
                 )
 
             CudaGraphManager.capture(self, create_forward_fn, progress_bar_desc=progress_bar_desc)
