@@ -611,6 +611,14 @@ def test_projector_applies_optional_modelslim_rotation():
         torch.testing.assert_close(projector(image_features), image_features)
 
 
+def test_mm_projector_out_hidden_size_is_gated_by_vllm_version():
+    """vLLM main requires `out_hidden_size`; v0.30.0 resolves it internally."""
+    with patch.object(kimi_k3, "vllm_version_is", return_value=True):
+        assert kimi_k3._mm_projector_kwargs(128) == {}
+    with patch.object(kimi_k3, "vllm_version_is", return_value=False):
+        assert kimi_k3._mm_projector_kwargs(128) == {"out_hidden_size": 128}
+
+
 def test_k3_dspark_post_process_rotates_projection_and_target_boundaries(tmp_path, monkeypatch):
     model = AscendK3DSparkForCausalLM.__new__(AscendK3DSparkForCausalLM)
     nn.Module.__init__(model)
