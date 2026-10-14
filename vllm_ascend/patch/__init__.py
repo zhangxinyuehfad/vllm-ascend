@@ -692,6 +692,24 @@
 #       Remove this patch once upstream vLLM adds the terminal short-circuit
 #       to the outlines backend.
 #
+#   3. `xgrammar.GrammarCompiler.compile_json_schema`
+#    Why:
+#       vLLM #58067 (main only, absent from v0.30.0) passes
+#       `separators=(",", ":")` when `disable_any_whitespace` is set. The
+#       xgrammar releases shipped with Ascend (0.2.7/0.2.8) mishandle it: the
+#       stricter grammar makes small models loop on `","` until `max_tokens`
+#       and emit truncated, invalid JSON (e.g. the xgrammar guided-decoding e2e
+#       test). The v0.30.0 lane never passes the argument.
+#    How:
+#       On the main lane, wrap `GrammarCompiler.compile_json_schema` to force
+#       `separators=None`, restoring the legacy (v0.30.0) grammar. Gated by
+#       `vllm_version_is("0.30.0")` so the release lane is untouched.
+#    Related PR (if no, explain why):
+#       https://github.com/vllm-project/vllm/pull/58067
+#    Future Plan:
+#       Remove once xgrammar >= 0.2.9 (which fixes separators handling) is
+#       pinned.
+#
 # ** 20a. File: platform/patch_swa_bounded_replay_legacy.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   Targets: CacheConfig, EngineArgs, Scheduler.schedule, KVCacheManager,
