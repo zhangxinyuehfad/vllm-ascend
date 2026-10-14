@@ -25,6 +25,7 @@ from vllm.config.compilation import CUDAGraphMode
 from vllm.distributed.kv_transfer import get_kv_transfer_group, has_kv_transfer_group
 from vllm.model_executor.layers.mamba.mamba_utils import is_conv_state_dim_first
 from vllm.v1.kv_cache_interface import KVCacheConfig
+from vllm.v1.utils import CpuGpuBuffer
 from vllm.v1.worker import mamba_utils
 from vllm.v1.worker.gpu.model_states.interface import ModelSpecificAttnMetadata
 from vllm.v1.worker.gpu.model_states.mamba_hybrid import (
@@ -33,7 +34,9 @@ from vllm.v1.worker.gpu.model_states.mamba_hybrid import (
 )
 from vllm.v1.worker.mamba_utils import (
     MambaSpecDecodeGPUContext,
+    get_mamba_groups,
     preprocess_mamba_align_fused_kernel,
+    validate_mamba_state_copy_funcs,
 )
 from vllm.v1.worker.utils import AttentionGroup
 
@@ -202,14 +205,38 @@ class AscendMambaHybridModelState(MambaHybridModelState, AscendModelState):
         mamba_group_ids: list[int],
         block_tables: tuple[torch.Tensor, ...],
     ) -> MambaSpecDecodeGPUContext:
-        # vLLM main removed `MambaHybridModelState._ensure_align_ctx`: the align
-        # context is created in `initialize_kv_cache` and stored on
-        # `self._mamba_ctx`. The v0.30.0 lane still provides the lazy helper on
-        # the base class.
+        # vLLM main removed `MambaHybridModelState._ensure_align_ctx` and moved
+        # the align-context creation into `initialize_kv_cache`. That context is
+        # not always present by the time `preprocess_state` runs (e.g. it can be
+        # torn down by the CUDA-graph memory profiler or skipped on a profiling
+        # model state), so keep the v0.30.0 lazy (re)creation semantics on the
+        # main lane instead of asserting. `initialize_from_forward_context`'s
+        # second block-table argument is optional on main.
         if vllm_version_is("0.30.0"):
             return super()._ensure_align_ctx(kv_cache_config, mamba_group_ids, block_tables)
-        assert self._mamba_ctx is not None
-        return self._mamba_ctx
+        if self._mamba_ctx is None:
+            if self._mamba_state_copy_funcs is None:
+                mamba_groups = get_mamba_groups(kv_cache_config)
+                mamba_types = {spec.mamba_type for spec in mamba_groups}
+                copy_funcs = self.model.get_mamba_state_copy_funcs(mamba_types)
+                validate_mamba_state_copy_funcs(mamba_groups, copy_funcs)
+                self._mamba_state_copy_funcs = copy_funcs
+            self._mamba_ctx = MambaSpecDecodeGPUContext.create(
+                max_num_reqs=self.max_num_reqs,
+                kv_cache_config=kv_cache_config,
+                copy_funcs=self._mamba_state_copy_funcs,
+                device=self.device,
+                make_buffer=lambda n, dtype: CpuGpuBuffer(n, dtype=dtype, device=self.device),
+            )
+        ctx = self._mamba_ctx
+        if not ctx.is_initialized:
+            ctx.initialize_from_forward_context(
+                kv_cache_config,
+                self.vllm_config.compilation_config.static_forward_context,
+                self._mamba_state_copy_funcs,
+                [block_tables[gid] for gid in mamba_group_ids],
+            )
+        return ctx
 
     def preprocess_state(
         self,
