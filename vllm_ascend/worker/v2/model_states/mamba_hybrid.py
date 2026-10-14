@@ -37,6 +37,7 @@ from vllm.v1.worker.mamba_utils import (
 )
 from vllm.v1.worker.utils import AttentionGroup
 
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2.attn_utils import build_attn_metadata
 from vllm_ascend.worker.v2.input_batch import AscendInputBatch
 from vllm_ascend.worker.v2.model_states.default import AscendModelState
@@ -193,6 +194,21 @@ class AscendMambaHybridModelState(MambaHybridModelState, AscendModelState):
             HAS_IDX_MAPPING=True,
         )
         pending.pending_layers.discard(layer_name)
+
+    def _ensure_align_ctx(
+        self,
+        kv_cache_config: KVCacheConfig,
+        mamba_group_ids: list[int],
+        block_tables: tuple[torch.Tensor, ...],
+    ) -> MambaSpecDecodeGPUContext:
+        # vLLM main removed `MambaHybridModelState._ensure_align_ctx`: the align
+        # context is created in `initialize_kv_cache` and stored on
+        # `self._mamba_ctx`. The v0.30.0 lane still provides the lazy helper on
+        # the base class.
+        if vllm_version_is("0.30.0"):
+            return super()._ensure_align_ctx(kv_cache_config, mamba_group_ids, block_tables)
+        assert self._mamba_ctx is not None
+        return self._mamba_ctx
 
     def preprocess_state(
         self,
