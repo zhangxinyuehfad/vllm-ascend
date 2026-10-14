@@ -623,18 +623,32 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
         slot_mappings: dict[str, torch.Tensor] | None,
         num_tokens_across_dp: torch.Tensor | None,
         cudagraph_runtime_mode: CUDAGraphMode = CUDAGraphMode.NONE,
+        num_speculative_steps: int | None = None,
     ) -> None:
         """Thin override: delegate to upstream single-step ``_generate_draft``,
         then apply Ascend-specific attention-metadata updates required by the
         FIA operator."""
-        super()._generate_draft(
-            num_reqs,
-            num_tokens_padded,
-            attn_metadata,
-            slot_mappings,
-            num_tokens_across_dp,
-            cudagraph_runtime_mode,
-        )
+        if vllm_version_is("0.30.0"):
+            super()._generate_draft(
+                num_reqs,
+                num_tokens_padded,
+                attn_metadata,
+                slot_mappings,
+                num_tokens_across_dp,
+                cudagraph_runtime_mode,
+            )
+        else:
+            # vLLM #60335 added `num_speculative_steps` on main. The ACLGraph
+            # capture path may omit it, so fall back to the configured count.
+            super()._generate_draft(
+                num_reqs,
+                num_tokens_padded,
+                attn_metadata,
+                slot_mappings,
+                num_tokens_across_dp,
+                cudagraph_runtime_mode,
+                num_speculative_steps if num_speculative_steps is not None else self.num_speculative_steps,
+            )
         if attn_metadata is not None:
             self._update_decode_attn_metadata(attn_metadata, 1, num_reqs)
 
@@ -645,6 +659,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
         batch_desc: BatchExecutionDescriptor,
         num_tokens_across_dp: torch.Tensor | None,
         seq_lens_cpu_upper_bound: torch.Tensor | None = None,
+        num_speculative_steps: int | None = None,
     ) -> None:
         """Minimal override to handle the merged multi-step graph in FULL mode.
 
@@ -658,7 +673,19 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
             assert self.decode_cudagraph_manager is not None
             self.decode_cudagraph_manager.run_fullgraph(batch_desc)
             return
-        super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
+        if vllm_version_is("0.30.0"):
+            super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
+        else:
+            # vLLM #60335 added `num_speculative_steps` on main. The ACLGraph
+            # capture path may omit it, so fall back to the configured count.
+            super()._multi_step_decode(
+                num_reqs,
+                skip_attn,
+                batch_desc,
+                num_tokens_across_dp,
+                seq_lens_cpu_upper_bound,
+                num_speculative_steps if num_speculative_steps is not None else self.num_speculative_steps,
+            )
 
     def _prefill(
         self,
