@@ -73,30 +73,13 @@ class AscendPCPManager(PCPManager):
     # The runner's global input buffers, which back global graph metadata.
     global_input_buffers: AscendInputBuffers | None = None
 
-    def __init__(
+    def _init_ascend_buffers(
         self,
-        pcp_world_size: int,
-        pcp_rank: int,
         device: torch.device,
-        req_states: RequestState | None = None,
-        max_num_reqs: int | None = None,
-        max_num_tokens: int | None = None,
-        block_tables: BlockTables | None = None,
-        dcp_world_size: int = 1,
-        dcp_rank: int = 0,
-        cp_interleave: int = 1,
+        block_tables: BlockTables | None,
+        max_num_reqs: int | None,
+        max_num_tokens: int | None,
     ) -> None:
-        super().__init__(
-            pcp_world_size=pcp_world_size,
-            pcp_rank=pcp_rank,
-            device=device,
-            max_num_reqs=max_num_reqs,
-            max_num_tokens=max_num_tokens,
-            block_tables=block_tables,
-            dcp_world_size=dcp_world_size,
-            dcp_rank=dcp_rank,
-            cp_interleave=cp_interleave,
-        )
         # PCP supplies its own output buffers to compute_slot_mappings, so their
         # dtype must match Ascend block-table slots for cache-write operators.
         if block_tables is not None:
@@ -133,6 +116,78 @@ class AscendPCPManager(PCPManager):
         # piecewise/FULL graphs where each rank pads its local batch to the
         # same global padded length.
         self._sampling_hidden_restored = False
+
+    # vLLM main made `shard_decode_requests` a required PCPManager argument and
+    # `maybe_build_pcp_manager` passes it; v0.30.0 has neither. Define the
+    # public signature per lane and keep the Ascend-only body in
+    # `_init_ascend_buffers`.
+    if vllm_version_is("0.30.0"):
+
+        def __init__(
+            self,
+            pcp_world_size: int,
+            pcp_rank: int,
+            device: torch.device,
+            req_states: RequestState | None = None,
+            max_num_reqs: int | None = None,
+            max_num_tokens: int | None = None,
+            block_tables: BlockTables | None = None,
+            dcp_world_size: int = 1,
+            dcp_rank: int = 0,
+            cp_interleave: int = 1,
+        ) -> None:
+            super().__init__(
+                pcp_world_size=pcp_world_size,
+                pcp_rank=pcp_rank,
+                device=device,
+                max_num_reqs=max_num_reqs,
+                max_num_tokens=max_num_tokens,
+                block_tables=block_tables,
+                dcp_world_size=dcp_world_size,
+                dcp_rank=dcp_rank,
+                cp_interleave=cp_interleave,
+            )
+            self._init_ascend_buffers(
+                device,
+                block_tables,
+                max_num_reqs,
+                max_num_tokens,
+            )
+
+    else:
+
+        def __init__(
+            self,
+            pcp_world_size: int,
+            pcp_rank: int,
+            device: torch.device,
+            shard_decode_requests: bool = False,
+            req_states: RequestState | None = None,
+            max_num_reqs: int | None = None,
+            max_num_tokens: int | None = None,
+            block_tables: BlockTables | None = None,
+            dcp_world_size: int = 1,
+            dcp_rank: int = 0,
+            cp_interleave: int = 1,
+        ) -> None:
+            super().__init__(
+                pcp_world_size=pcp_world_size,
+                pcp_rank=pcp_rank,
+                device=device,
+                shard_decode_requests=shard_decode_requests,
+                max_num_reqs=max_num_reqs,
+                max_num_tokens=max_num_tokens,
+                block_tables=block_tables,
+                dcp_world_size=dcp_world_size,
+                dcp_rank=dcp_rank,
+                cp_interleave=cp_interleave,
+            )
+            self._init_ascend_buffers(
+                device,
+                block_tables,
+                max_num_reqs,
+                max_num_tokens,
+            )
 
     @property
     def is_decode_sharded(self) -> bool:
