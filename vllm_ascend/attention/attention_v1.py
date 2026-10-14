@@ -81,6 +81,12 @@ class AscendAttentionBackend(AttentionBackend):
     def get_name() -> str:
         return "CUSTOM"
 
+    @classmethod
+    def supports_batch_invariance(cls) -> bool:
+        # vLLM #60271 added the batch-invariance support check in
+        # `init_attn_backend` on main; the v0.30.0 lane has no such check.
+        return not vllm_version_is("0.30.0")
+
     @staticmethod
     def get_impl_cls() -> type["AscendAttentionBackendImpl"]:
         if enable_dcp():
