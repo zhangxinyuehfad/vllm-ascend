@@ -23,16 +23,51 @@ from vllm_ascend.worker.v2.spec_decode.pcp_utils import (
     disable_profiling_chunk_for_draft,
 )
 
+# Upstream uses the attention kernel block size for DCP ownership, which is
+# incorrect when physical KV blocks are larger than kernel blocks. Bind the
+# physical size so ownership uses KV cache blocks while slot lookup uses the
+# kernel-sized block table supplied by the upstream caller.
+if vllm_version_is("0.30.0"):
 
-def prepare_dflash_inputs_factory(kv_cache_block_size: int) -> Callable[..., None]:
-    # Upstream uses the attention kernel block size for DCP ownership, which is
-    # incorrect when physical KV blocks are larger than kernel blocks. Bind the
-    # physical size so ownership uses KV cache blocks while slot lookup uses the
-    # kernel-sized block table supplied by the upstream caller.
-    def prepare_with_block_size(*args: Any, **kwargs: Any) -> None:
-        prepare_dflash_inputs(*args, **kwargs, kv_cache_block_size=kv_cache_block_size)
+    def prepare_dflash_inputs_factory(kv_cache_block_size: int) -> Callable[..., None]:
+        # v0.30.0's DFlash caller already forwards the kernel block size, so the
+        # Ascend block table is indexed with the right granularity.
+        def prepare_with_block_size(*args: Any, **kwargs: Any) -> None:
+            prepare_dflash_inputs(*args, **kwargs, kv_cache_block_size=kv_cache_block_size)
 
-    return prepare_with_block_size
+        return prepare_with_block_size
+
+else:
+
+    def prepare_dflash_inputs_factory(
+        kv_cache_block_size: int,
+        block_tables: Any | None = None,
+    ) -> Callable[..., None]:
+        # vLLM main (#57169) dropped ``kernel_block_sizes`` from ``BlockTables``
+        # and the DFlash caller now forwards ``BlockTables.block_sizes``
+        # (physical KV blocks) as the ``block_size`` argument, while
+        # ``AscendBlockTables`` keeps the block table kernel-block addressed by
+        # re-expanding its rows. Restore the kernel block size per group.
+        kernel_block_size_by_ptr: dict[int, int] = {}
+        kernel_block_sizes = getattr(block_tables, "kernel_block_sizes", None)
+        input_block_tables = getattr(block_tables, "input_block_tables", None)
+        if kernel_block_sizes is not None and input_block_tables is not None:
+            kernel_block_size_by_ptr = {
+                table.data_ptr(): int(size) for table, size in zip(input_block_tables, kernel_block_sizes)
+            }
+
+        def prepare_with_block_size(*args: Any, **kwargs: Any) -> None:
+            # ``prepare_dflash_inputs`` takes ``block_table`` then ``block_size``
+            # right after ``input_seeds``; upstream passes them positionally.
+            if kernel_block_size_by_ptr and len(args) >= 18:
+                block_table = args[16]
+                if isinstance(block_table, torch.Tensor):
+                    kernel_block_size = kernel_block_size_by_ptr.get(block_table.data_ptr())
+                    if kernel_block_size is not None and kernel_block_size != args[17]:
+                        args = (*args[:17], kernel_block_size, *args[18:])
+            prepare_dflash_inputs(*args, **kwargs, kv_cache_block_size=kv_cache_block_size)
+
+        return prepare_with_block_size
 
 
 class AscendDFlashSpeculator(LmheadTPDraftSamplingMixin, DFlashSpeculator):
@@ -133,9 +168,15 @@ class AscendDFlashSpeculator(LmheadTPDraftSamplingMixin, DFlashSpeculator):
                 attn_backends[layer_name] = attn_layers[layer_name].get_attn_backend()
 
         self.attn_backends = attn_backends
-        dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
-            self.vllm_config.cache_config.block_size
-        )
+        if vllm_version_is("0.30.0"):
+            dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
+                self.vllm_config.cache_config.block_size
+            )
+        else:
+            dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
+                self.vllm_config.cache_config.block_size,
+                block_tables,
+            )
 
     # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main, and
     # vLLM #60335 added `num_speculative_tokens`. Define the per-version public

@@ -1149,17 +1149,6 @@ class AscendKimiLinearForCausalLM(UpstreamKimiLinearForCausalLM, KimiMixtureOfEx
         self.model.dspark_aux_capture_materialized = enabled
 
 
-def _mm_projector_kwargs(hidden_size: int) -> dict[str, int]:
-    """Extra KimiK25MultiModalProjector kwargs for the active vLLM lane.
-
-    vLLM main made `out_hidden_size` a required argument; v0.30.0 resolves the
-    output size internally from the vision config's `text_hidden_size`.
-    """
-    if vllm_version_is("0.30.0"):
-        return {}
-    return {"out_hidden_size": hidden_size}
-
-
 class AscendKimiK3MultiModalProjector(KimiK25MultiModalProjector):
     """Kimi projector with the optional ModelSlim output rotation."""
 
@@ -1234,7 +1223,9 @@ class AscendKimiK3ForConditionalGeneration(UpstreamKimiK3ForConditionalGeneratio
                 quant_config=vision_quant_config,
                 prefix=maybe_prefix(prefix, "mm_projector"),
                 enable_rotation=get_rotation_path(vllm_config) is not None,
-                **_mm_projector_kwargs(self.hidden_size),
+                # vLLM main made `out_hidden_size` a required argument; v0.30.0
+                # resolves the output size internally from the vision config.
+                **({} if vllm_version_is("0.30.0") else {"out_hidden_size": self.hidden_size}),
             )
         if vision_quant_config is not None:
             self.mm_projector = self.mm_projector.to(device=self.device)
