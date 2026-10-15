@@ -253,9 +253,15 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
                 self.attn_architecture = "GQA"
             else:
                 self.attn_architecture = None
-            dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
-                self.vllm_config.cache_config.block_size
-            )
+            if vllm_version_is("0.30.0"):
+                dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
+                    self.vllm_config.cache_config.block_size
+                )
+            else:
+                dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
+                    self.vllm_config.cache_config.block_size,
+                    block_tables,
+                )
 
     def _prepare_draft_dcp_metadata_inputs(
         self, num_reqs: int, num_reqs_padded: int, step: int
