@@ -27,10 +27,10 @@ from vllm_ascend.worker.v2.spec_decode.pcp_utils import (
 # incorrect when physical KV blocks are larger than kernel blocks. Bind the
 # physical size so ownership uses KV cache blocks while slot lookup uses the
 # kernel-sized block table supplied by the upstream caller.
-if vllm_version_is("0.30.0"):
+if vllm_version_is("0.31.0"):
 
     def prepare_dflash_inputs_factory(kv_cache_block_size: int) -> Callable[..., None]:
-        # v0.30.0's DFlash caller already forwards the kernel block size, so the
+        # v0.31.0's DFlash caller already forwards the kernel block size, so the
         # Ascend block table is indexed with the right granularity.
         def prepare_with_block_size(*args: Any, **kwargs: Any) -> None:
             prepare_dflash_inputs(*args, **kwargs, kv_cache_block_size=kv_cache_block_size)
@@ -168,7 +168,7 @@ class AscendDFlashSpeculator(LmheadTPDraftSamplingMixin, DFlashSpeculator):
                 attn_backends[layer_name] = attn_layers[layer_name].get_attn_backend()
 
         self.attn_backends = attn_backends
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
                 self.vllm_config.cache_config.block_size
             )
@@ -181,7 +181,7 @@ class AscendDFlashSpeculator(LmheadTPDraftSamplingMixin, DFlashSpeculator):
     # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main, and
     # vLLM #60335 added `num_speculative_tokens`. Define the per-version public
     # signature and body.
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def propose(
             self,

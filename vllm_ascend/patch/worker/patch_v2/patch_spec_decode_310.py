@@ -19,8 +19,8 @@ from vllm_ascend.worker.v2 import aclgraph_utils as aclgraph_utils_mod
 from vllm_ascend.worker.v2 import spec_decode as ascend_spec_decode
 
 # vLLM #60335 renamed the shared AR speculator module to `target_dependent_ar`
-# on main; the release lane (v0.30.0) still ships `autoregressive`.
-if vllm_version_is("0.30.0"):
+# on main; the release lane (v0.31.0) still ships `autoregressive`.
+if vllm_version_is("0.31.0"):
     from vllm.v1.worker.gpu.spec_decode.autoregressive import speculator as ar_speculator
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar import speculator as ar_speculator

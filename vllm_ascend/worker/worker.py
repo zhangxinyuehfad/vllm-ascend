@@ -111,7 +111,6 @@ from vllm_ascend.utils import (
     register_ascend_customop,
     register_device_print,
     setup_ascend_local_comm_res,
-    vllm_version_is,
 )
 from vllm_ascend.worker.model_runner_v1 import NPUModelRunner
 
@@ -590,13 +589,7 @@ class NPUWorker(WorkerBase):
 
         maybe_apply_startup_plan(self)
 
-        # vLLM #58411 added randomized dummy inputs (`randomize_inputs`) on
-        # main; the v0.30.0 lane has no such parameter/behaviour.
-        randomize_inputs = (
-            False
-            if vllm_version_is("0.30.0")
-            else envs.VLLM_RANDOMIZE_DP_DUMMY_INPUTS and self.parallel_config.data_parallel_size > 1
-        )
+        randomize_inputs = envs.VLLM_RANDOMIZE_DP_DUMMY_INPUTS and self.parallel_config.data_parallel_size > 1
 
         # Fast path: user has explicitly specified KV cache size via
         # --kv-cache-memory. Still run profile_run() to compile the model,

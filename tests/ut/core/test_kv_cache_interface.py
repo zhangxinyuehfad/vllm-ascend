@@ -76,10 +76,10 @@ def test_get_storage_block_size_and_dcp_memory():
 
 def test_get_storage_block_size_for_plain_mla_subclass():
     # vLLM #57169 removed `MLAAttentionSpec.storage_block_size` on main; the
-    # v0.30.0 lane keeps it as an optional override. A plain MLA subclass
+    # v0.31.0 lane keeps it as an optional override. A plain MLA subclass
     # (HiddenStateCacheSpec) must resolve on both lanes.
     spec = HiddenStateCacheSpec(block_size=16, num_kv_heads=1, head_size=128, dtype=torch.bfloat16)
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
         expected = spec.block_size if spec.storage_block_size is None else spec.storage_block_size
     else:
         expected = spec.block_size

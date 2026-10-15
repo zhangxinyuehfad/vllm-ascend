@@ -57,6 +57,7 @@ from vllm_ascend.utils import (
     refresh_block_size,
     update_cudagraph_capture_sizes,
     enable_sp,
+    vllm_version_is,
 )
 
 if TYPE_CHECKING:
@@ -355,7 +356,7 @@ class NPUPlatform(Platform):
         # vLLM #60517 removed PassConfig.enable_sp/fuse_gemm_comms/
         # sp_min_token_num on main; the pass-based SP this defaulted no longer
         # exists there.
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             pass_config = vllm_config.compilation_config.pass_config
             if (pass_config.enable_sp or pass_config.fuse_gemm_comms) and pass_config.sp_min_token_num is None:
                 pass_config.sp_min_token_num = 1
@@ -1307,7 +1308,7 @@ def _setup_compile_backend(
         original_sizes = compilation_config.cudagraph_capture_sizes
         # vLLM #60517 removed `update_sizes_for_sequence_parallelism` on main;
         # inline its behaviour (keep sizes that are multiples of tp_size).
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             sp_aclgraph_sizes = vllm_config.update_sizes_for_sequence_parallelism(original_sizes)
         else:
             tp_size = vllm_config.parallel_config.tensor_parallel_size

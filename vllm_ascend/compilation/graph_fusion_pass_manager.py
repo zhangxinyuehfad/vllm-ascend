@@ -75,7 +75,7 @@ class GraphFusionPassManager:
 
         # vLLM #60517 removed PassConfig.fuse_gemm_comms on main; there the MMRS
         # fusion is gated on Ascend sequence parallelism instead.
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             fuse_gemm_comms = config.compilation_config.pass_config.fuse_gemm_comms
         else:
             fuse_gemm_comms = enable_sp(config)

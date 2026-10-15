@@ -4717,7 +4717,7 @@ class NPUModelRunner(GPUModelRunner):
             kv_cache_config, self.attn_groups
         )
         self.kernel_block_sizes = kernel_block_sizes
-        if not vllm_version_is("0.30.0"):
+        if not vllm_version_is("0.31.0"):
             # vLLM #57169/main splits metadata-builder creation out of
             # `initialize_attn_backend`; builders need the kernel block sizes.
             self.initialize_metadata_builders(kv_cache_config, kernel_block_sizes)
@@ -4777,7 +4777,7 @@ class NPUModelRunner(GPUModelRunner):
                 | AscendDraftModelProposer,
             )
             kernel_block_sizes = self.kernel_block_sizes
-            if isinstance(self.drafter, AscendDSparkProposer) or not vllm_version_is("0.30.0"):
+            if isinstance(self.drafter, AscendDSparkProposer) or not vllm_version_is("0.31.0"):
                 # On main, create_metadata_builders() selects the kernel block
                 # size via select_common_block_size(), which requires an int.
                 # 310P keeps per-group candidate lists (e.g. [[128], [0]]), so
@@ -6347,7 +6347,7 @@ class NPUModelRunner(GPUModelRunner):
             for group_key, layer_names in attn_backends_map.items():
                 attn_backend = group_key.attn_backend
                 kv_cache_spec = group_key.kv_cache_spec
-                if vllm_version_is("0.30.0"):
+                if vllm_version_is("0.31.0"):
                     attn_metadata_builders = [
                         attn_backend.get_builder_cls()(
                             kv_cache_spec,
@@ -6393,7 +6393,7 @@ class NPUModelRunner(GPUModelRunner):
         # `initialize_metadata_builders` (called from `initialize_kv_cache`),
         # so the device-metadata providers and the reorder threshold are set up
         # there instead.
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             self._init_device_metadata_providers()
             # Calculate reorder batch threshold (if needed)
             self.calculate_reorder_batch_threshold()
@@ -6635,7 +6635,7 @@ class NPUModelRunner(GPUModelRunner):
         # vLLM #60517 removed `PassConfig.enable_sp` on main; the
         # `enable_sp(self.vllm_config)` term already covers Ascend SP there.
         pass_sp = (
-            self.compilation_config.pass_config.enable_sp if vllm_version_is("0.30.0") else False
+            self.compilation_config.pass_config.enable_sp if vllm_version_is("0.31.0") else False
         )
         return (
             self.compilation_config.cudagraph_mode.decode_mode() == CUDAGraphMode.FULL
@@ -6669,14 +6669,14 @@ class NPUModelRunner(GPUModelRunner):
                 graph_alignment = math.lcm(self.uniform_decode_query_len, tensor_parallel_size)
                 # vLLM #60517 dropped the `tensor_parallel_size` argument on
                 # main; the SP-aware lcm is computed here instead.
-                if vllm_version_is("0.30.0"):
+                if vllm_version_is("0.31.0"):
                     self.compilation_config.adjust_cudagraph_sizes_for_spec_decode(graph_alignment, 1)
                 else:
                     self.compilation_config.adjust_cudagraph_sizes_for_spec_decode(graph_alignment)
                 resolver_tensor_parallel_size = 1
             # vLLM #60517 removed the `tensor_parallel_size` parameter on main.
             resolve_kwargs = (
-                {"tensor_parallel_size": resolver_tensor_parallel_size} if vllm_version_is("0.30.0") else {}
+                {"tensor_parallel_size": resolver_tensor_parallel_size} if vllm_version_is("0.31.0") else {}
             )
             cudagraph_mode = self.compilation_config.resolve_cudagraph_mode_and_sizes(
                 min_cg_support=min_cg_support,
@@ -6880,7 +6880,7 @@ def _replace_gpu_model_runner_function_wrapper(target_module_name):
 def update_pass_config(model_runner):
     # vLLM #60517 removed `PassConfig.enable_sp` on main; the pass-based SP this
     # context manager toggled no longer exists there, so it is a no-op.
-    if not vllm_version_is("0.30.0"):
+    if not vllm_version_is("0.31.0"):
         yield
         return
     try:

@@ -253,7 +253,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
                 self.attn_architecture = "GQA"
             else:
                 self.attn_architecture = None
-            if vllm_version_is("0.30.0"):
+            if vllm_version_is("0.31.0"):
                 dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
                     self.vllm_config.cache_config.block_size
                 )
@@ -411,7 +411,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
     # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main, and
     # vLLM #60335 added `num_speculative_tokens`. Define the per-version public
     # signature and body.
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def propose(
             self,

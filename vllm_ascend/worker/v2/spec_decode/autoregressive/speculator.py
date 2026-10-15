@@ -63,8 +63,8 @@ from vllm_ascend.worker.v2.spec_decode.pcp_utils import (
 )
 
 # vLLM #60335 renamed `autoregressive` to `target_dependent_ar` on main;
-# the release lane (v0.30.0) still ships the old module and class name.
-if vllm_version_is("0.30.0"):
+# the release lane (v0.31.0) still ships the old module and class name.
+if vllm_version_is("0.31.0"):
     from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
         AutoRegressiveSpeculator as _UpstreamAutoRegressiveSpeculator,
     )
@@ -313,7 +313,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
     # vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main, and
     # vLLM #60335 added `num_speculative_tokens`. Define the per-version public
     # signature and body.
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def propose(
             self,
@@ -623,7 +623,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
         """Thin override: delegate to upstream single-step ``_generate_draft``,
         then apply Ascend-specific attention-metadata updates required by the
         FIA operator."""
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             super()._generate_draft(
                 num_reqs,
                 num_tokens_padded,
@@ -668,7 +668,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
             assert self.decode_cudagraph_manager is not None
             self.decode_cudagraph_manager.run_fullgraph(batch_desc)
             return
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             super()._multi_step_decode(num_reqs, skip_attn, batch_desc, num_tokens_across_dp, seq_lens_cpu_upper_bound)
         else:
             # vLLM #60335 added `num_speculative_steps` on main. The ACLGraph

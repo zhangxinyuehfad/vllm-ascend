@@ -199,13 +199,13 @@ class AscendMambaHybridModelState(MambaHybridModelState, AscendModelState):
         pending.pending_layers.discard(layer_name)
 
     # vLLM main removed `MambaHybridModelState._ensure_align_ctx` and moved the
-    # align-context creation into `initialize_kv_cache`; the v0.30.0 lane still
+    # align-context creation into `initialize_kv_cache`; the v0.31.0 lane still
     # ships the lazy helper. On main that context is not always present by the
     # time `preprocess_state` runs (e.g. it can be torn down by the CUDA-graph
     # memory profiler or skipped on a profiling model state), so keep the
-    # v0.30.0 lazy (re)creation semantics. `initialize_from_forward_context`'s
+    # v0.31.0 lazy (re)creation semantics. `initialize_from_forward_context`'s
     # second block-table argument is optional on main.
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def _ensure_align_ctx(
             self,

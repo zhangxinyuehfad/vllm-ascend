@@ -2659,7 +2659,7 @@ class TestMooncakeConnectorForScheduler(unittest.TestCase):
         connector.get_num_new_matched_tokens(request, 0)
         mock_method.assert_called_once_with(request, 0)
 
-    @pytest.mark.skipif(vllm_version_is("0.30.0"), reason="main-only scheduler hook")
+    @pytest.mark.skipif(vllm_version_is("0.31.0"), reason="main-only scheduler hook")
     def test_scheduler_tracks_kv_cache_config_for_loaded_groups(self):
         config = MockVllmConfig()
         kv_cache_config = MockKVCacheConfig()

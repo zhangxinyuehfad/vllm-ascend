@@ -38,8 +38,8 @@ from vllm_ascend.worker.v2.spec_decode.autoregressive.speculator import (
 )
 
 # vLLM #60335 renamed `autoregressive` to `target_dependent_ar` on main; the
-# release lane (v0.30.0) still ships the old module and class name.
-if vllm_version_is("0.30.0"):
+# release lane (v0.31.0) still ships the old module and class name.
+if vllm_version_is("0.31.0"):
     from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
         AutoRegressiveSpeculator as _UpstreamAutoRegressiveSpeculator,
     )
@@ -273,7 +273,7 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
     # vLLM #60335 renamed the upstream AR speculator and added a per-batch
     # `num_speculative_steps` argument on main. Gate the signature and the
     # upstream call outside the method body, matching the parent speculator.
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def _generate_draft(
             self,
@@ -334,7 +334,7 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
         self.current_draft_step.fill_(step)
         set_draft_step_host(step)
 
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
 
         def _multi_step_decode(
             self,

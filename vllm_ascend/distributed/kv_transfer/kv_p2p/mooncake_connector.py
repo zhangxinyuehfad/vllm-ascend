@@ -1622,7 +1622,7 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
         self, vllm_config: VllmConfig, role: KVConnectorRole, kv_cache_config: KVCacheConfig | None = None
     ):
         assert vllm_config.kv_transfer_config is not None
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             self._kv_transfer_config = vllm_config.kv_transfer_config
         else:
             # vLLM main's KVConnectorBase_V1.__init__ tracks `_kv_cache_config`
@@ -1644,7 +1644,7 @@ class MooncakeConnector(KVConnectorBase_V1, SupportsHMA):
     # Scheduler Side Methods
     ############################################################
 
-    if not vllm_version_is("0.30.0"):
+    if not vllm_version_is("0.31.0"):
 
         def get_loaded_kv_cache_group_ids(self, request: "Request") -> tuple[int, ...]:
             # vLLM main's scheduler uses this for skip_zeroing_group_ids.
