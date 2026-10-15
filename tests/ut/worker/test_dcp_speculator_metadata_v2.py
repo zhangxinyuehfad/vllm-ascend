@@ -15,11 +15,12 @@ from vllm.v1.worker.gpu.spec_decode import speculator as upstream_speculator
 from vllm_ascend.attention.attention_v1 import AscendAttentionState
 from vllm_ascend.attention.context_parallel import sfa_cp
 from vllm_ascend.attention.context_parallel.sfa_cp import AscendSFADCPMetadata, AscendSFADCPMetadataBuilder
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.dcp_utils import DCPManager
 
 # vLLM #60335 renamed the AR speculator class/module on main; the release
-# lane (v0.30.0) still ships `autoregressive.speculator.AutoRegressiveSpeculator`.
-if vllm_version_is("0.30.0"):
+# lane (v0.31.0) still ships `autoregressive.speculator.AutoRegressiveSpeculator`.
+if vllm_version_is("0.31.0"):
     from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import AutoRegressiveSpeculator
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar.speculator import (

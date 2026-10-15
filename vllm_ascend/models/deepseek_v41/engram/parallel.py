@@ -22,9 +22,9 @@ from vllm_ascend.utils import (
 )
 
 # Upstream #59327 moved `engram_head_shard_rank` from `nvidia.engram` into
-# `common.engram` on main; the release lane (v0.30.0) still ships it under
+# `common.engram` on main; the release lane (v0.31.0) still ships it under
 # `nvidia.engram`.
-if vllm_version_is("0.30.0"):
+if vllm_version_is("0.31.0"):
     from vllm.models.deepseek_v41.nvidia.engram import (
         engram_head_shard_rank as engram_head_shard_rank,
     )

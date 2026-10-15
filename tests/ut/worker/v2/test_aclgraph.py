@@ -246,7 +246,7 @@ def test_capture_draft_decode_prepares_inputs_and_runs_forward():
     assert args[2].num_reqs == 3
     assert torch.equal(args[3], torch.tensor([4, 4], dtype=torch.int32))
     assert torch.equal(args[4], torch.tensor([10, 20, 30], dtype=torch.int32))
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
         assert len(args) == 5
     else:
         # vLLM #60335 passes `num_speculative_steps` on main.

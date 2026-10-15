@@ -269,7 +269,7 @@ def test_dflash2_acceptance(
     method: str,
     num_speculative_tokens: int,
 ):
-    if not vllm_version_is("0.30.0"):
+    if not vllm_version_is("0.31.0"):
         pytest.skip("vLLM #57934: Model Runner V1 rejects DFlash candidate-head drafts on main")
 
     main_model_name = DFLASH2_MODELS[method]["main"]

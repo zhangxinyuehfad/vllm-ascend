@@ -16,6 +16,7 @@ from vllm.v1.core.single_type_kv_cache_manager import (
     MambaSpec,
 )
 
+
 class AscendMambaManager(MambaManager):
     def __init__(self, kv_cache_spec: MambaSpec, block_pool: BlockPool, **kwargs) -> None:
         super().__init__(kv_cache_spec, block_pool, **kwargs)

@@ -205,7 +205,7 @@ def test_layerwise_connector_defers_mamba_pre_copy(mock_has_group, mock_get_grou
     kv_cache_config = _kv_cache_config(spec)
     state = _make_defer_state(kv_cache_config)
     ctx = MagicMock()
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
         state._ensure_align_ctx = MagicMock(return_value=ctx)
     else:
         # vLLM main removed `MambaHybridModelState._ensure_align_ctx`; the
@@ -234,7 +234,7 @@ def test_layerwise_connector_defers_mamba_pre_copy(mock_has_group, mock_get_grou
     connector.finish_mamba_state_copy.assert_called_once()
 
 
-@pytest.mark.skipif(vllm_version_is("0.30.0"), reason="main-only regression: _ensure_align_ctx moved")
+@pytest.mark.skipif(vllm_version_is("0.31.0"), reason="main-only regression: _ensure_align_ctx moved")
 def test_ensure_align_ctx_falls_back_to_mamba_ctx():
     # vLLM main removed `MambaHybridModelState._ensure_align_ctx`; the Ascend
     # override must return the context built in initialize_kv_cache instead of
@@ -247,11 +247,11 @@ def test_ensure_align_ctx_falls_back_to_mamba_ctx():
     assert state._ensure_align_ctx(kv_cache_config, [0], ()) is ctx
 
 
-@pytest.mark.skipif(vllm_version_is("0.30.0"), reason="main-only regression: _ensure_align_ctx moved")
+@pytest.mark.skipif(vllm_version_is("0.31.0"), reason="main-only regression: _ensure_align_ctx moved")
 def test_ensure_align_ctx_lazily_recreates_mamba_ctx():
     # The align context can be absent when preprocess_state runs (e.g. it was
     # torn down by the CUDA-graph memory profiler), so the main-lane override
-    # must lazily (re)create it like the v0.30.0 base helper did.
+    # must lazily (re)create it like the v0.31.0 base helper did.
     spec = _mamba_spec()
     kv_cache_config = _kv_cache_config(spec)
     state = _make_defer_state(kv_cache_config)

@@ -5,9 +5,9 @@
 vLLM #60271 ("Check batch-invariance support for every attention backend") added
 a hard check in ``vllm/v1/worker/gpu/attn_utils.init_attn_backend`` on main:
 ``VLLM_BATCH_INVARIANT`` mode now rejects any attention backend whose
-``supports_batch_invariance()`` returns False. The v0.30.0 lane has no such
+``supports_batch_invariance()`` returns False. The v0.31.0 lane has no such
 check, so the Ascend backends gate their declaration on
-``vllm_version_is("0.30.0")``.
+``vllm_version_is("0.31.0")``.
 """
 
 import pytest
@@ -55,7 +55,7 @@ else:
 
 @pytest.mark.parametrize("backend", _BACKENDS, ids=lambda backend: backend.__name__)
 def test_ascend_attention_backend_advertises_batch_invariance(backend) -> None:
-    assert backend.supports_batch_invariance() is (not vllm_version_is("0.30.0"))
+    assert backend.supports_batch_invariance() is (not vllm_version_is("0.31.0"))
 
 
 @pytest.mark.parametrize(
@@ -64,4 +64,4 @@ def test_ascend_attention_backend_advertises_batch_invariance(backend) -> None:
     ids=lambda backend: backend.__name__,
 )
 def test_ascend_attention_backend_subclass_inherits_batch_invariance(backend) -> None:
-    assert backend.supports_batch_invariance() is (not vllm_version_is("0.30.0"))
+    assert backend.supports_batch_invariance() is (not vllm_version_is("0.31.0"))

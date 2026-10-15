@@ -41,6 +41,7 @@ from vllm_ascend.models.glm5next.cache_config import (
 from vllm_ascend.models.glm5next.kv_cache import is_glm5_next_cache_spec
 from vllm_ascend.quantization.methods.kv_cache.turboquant import TURBOQUANT_CACHE_DTYPE
 from vllm_ascend.quantization.methods.kv_cache.turboquant import cache as tq_cache
+from vllm_ascend.utils import vllm_version_is
 
 _KIMI_K3_TARGET_LAYER_PREFIX = "language_model.model.layers."
 _KIMI_K3_DRAFT_LAYER_PREFIX = "model.layers."
@@ -538,10 +539,10 @@ def _is_deepseek_v4_groups(kv_cache_groups: list[KVCacheGroupSpec]) -> bool:
     return False
 
 
-# vLLM #57169 added a leading ``vllm_config`` argument on main; the v0.30.0
+# vLLM #57169 added a leading ``vllm_config`` argument on main; the v0.31.0
 # lane still calls ``_pool_bytes_per_block(kv_cache_groups)``. Gate the whole
 # function outside its body, mirroring the other main2main version gates.
-if vllm_version_is("0.30.0"):
+if vllm_version_is("0.31.0"):
 
     def _ascend_pool_bytes_per_block(kv_cache_groups: list[KVCacheGroupSpec]) -> int:
         """Use the same DSV4 divisor as Ascend's shared-tuple planner.

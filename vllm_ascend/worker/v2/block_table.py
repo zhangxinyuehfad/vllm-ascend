@@ -126,8 +126,8 @@ class AscendBlockTables(BlockTables):
                 for max_num_blocks, blocks_per_kv_block in zip(max_num_blocks_per_group, self.blocks_per_kv_block)
             ]
             # vLLM main added a per-group ``dcp_sharded`` flag to BlockTables;
-            # the release lane has no such parameter, so only forward it when the
-            # caller supplies it.
+            # the v0.31.0 release lane has no such parameter, so only forward it
+            # when the caller supplies it.
             super_kwargs: dict[str, list[bool]] = {}
             if dcp_sharded is not None:
                 super_kwargs["dcp_sharded"] = dcp_sharded

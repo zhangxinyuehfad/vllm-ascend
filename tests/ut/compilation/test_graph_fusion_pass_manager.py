@@ -37,8 +37,8 @@ class TestGraphFusionPassManagerConfig(TestBase):
     def test_fuse_gemm_comms_registers_pattern_matcher_pass(self, mock_platform):
         vllm_config = VllmConfig()
         vllm_config.model_config = MagicMock(dtype=torch.bfloat16)
-        if vllm_version_is("0.30.0"):
-            # v0.30.0 gates MMRS on the upstream PassConfig flag.
+        if vllm_version_is("0.31.0"):
+            # v0.31.0 gates MMRS on the upstream PassConfig flag.
             vllm_config.compilation_config.pass_config.fuse_gemm_comms = True
         vllm_config.additional_config = {
             "ascend_compilation_config": {

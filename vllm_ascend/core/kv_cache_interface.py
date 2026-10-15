@@ -45,7 +45,7 @@ def get_storage_block_size(kv_cache_spec: KVCacheSpec) -> int:
         return kv_cache_spec.block_size // kv_cache_spec.tokens_per_state
     if isinstance(kv_cache_spec, MLAAttentionSpec):
         # vLLM #57169 removed the MLA `storage_block_size` override on main.
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             storage_block_size = kv_cache_spec.storage_block_size
             return kv_cache_spec.block_size if storage_block_size is None else storage_block_size
         return kv_cache_spec.block_size

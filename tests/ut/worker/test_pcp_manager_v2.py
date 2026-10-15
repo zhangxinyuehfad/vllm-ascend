@@ -32,6 +32,7 @@ from vllm.v1.worker.gpu.pcp_manager import PCPManager
 
 from vllm_ascend.attention.context_parallel.common_cp import is_pcp_decode_sharding_enabled
 from vllm_ascend.platform import _setup_worker_and_scheduler
+from vllm_ascend.utils import vllm_version_is
 from vllm_ascend.worker.v2 import states as states_module
 from vllm_ascend.worker.v2.aclgraph_utils import ModelAclGraphManager, _prepare_pcp_inputs_to_capture
 from vllm_ascend.worker.v2.input_batch import AscendInputBatch, AscendInputBuffers
@@ -975,7 +976,7 @@ def test_validate_config_rejects_unsupported_speculator_options(
 def test_main2main_v2_overrides_accept_new_upstream_keywords() -> None:
     """Lock the keyword contracts added by vLLM #53694 and #53869."""
     # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
-    dp_sync_param = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
+    dp_sync_param = "dp_sync" if vllm_version_is("0.31.0") else "dp_sync_state"
     for speculator_cls in (
         AscendAutoRegressiveSpeculator,
         AscendDFlashSpeculator,

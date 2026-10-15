@@ -192,7 +192,7 @@ def test_dflash_profiling_does_not_reuse_target_dp_counts(monkeypatch, dummy_run
     monkeypatch.setattr(DFlashSpeculator, "propose", propose)
     monkeypatch.setattr(dflash_module, "build_attn_metadata_wrapper", nullcontext)
     # vLLM #60754 renamed `dp_sync` -> `dp_sync_state` on main.
-    dp_sync_kwarg = "dp_sync" if vllm_version_is("0.30.0") else "dp_sync_state"
+    dp_sync_kwarg = "dp_sync" if vllm_version_is("0.31.0") else "dp_sync_state"
     assert (
         speculator.propose(
             batch, *[None] * 10, **{dp_sync_kwarg: sync_state}, dummy_run=dummy_run, skip_attn_for_dummy_run=skip_attn
@@ -258,7 +258,7 @@ def test_dflash_input_preparation_restores_kernel_block_size_on_main(monkeypatch
     dflash_module.prepare_dflash_inputs_factory(384, block_tables)(*inputs)
 
     restored = kernel.call_args.args[17]
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
         # The release lane already forwards the kernel block size.
         assert restored == 384
     else:

@@ -63,7 +63,7 @@ from vllm_ascend.worker.device_metadata import DeviceMetadataStage
 
 def _pool_bytes_per_block(runtime, groups):
     """vLLM #57169 added a leading ``vllm_config`` argument on main."""
-    if vllm_version_is("0.30.0"):
+    if vllm_version_is("0.31.0"):
         return kv_cache_utils._pool_bytes_per_block(groups)
     return kv_cache_utils._pool_bytes_per_block(runtime, groups)
 

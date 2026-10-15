@@ -941,11 +941,11 @@ class AscendConfig:
         ) = self._parse_sparse_li_layers_from_quant_config(quant_config, ("W8A8_MXFP8",))
         self._sparse_li_layer_filter_enabled = self._has_sparse_li_layer_config(quant_config)
         # vLLM #60517 removed the torch.compile-based sequence-parallelism pass
-        # (and `PassConfig.enable_sp`) on main; it still exists on v0.30.0.
+        # (and `PassConfig.enable_sp`) on main; it still exists on v0.31.0.
         from vllm_ascend.utils import vllm_version_is
 
         enable_sp_by_pass = False
-        if vllm_version_is("0.30.0"):
+        if vllm_version_is("0.31.0"):
             enable_sp_by_pass = vc.compilation_config.pass_config.enable_sp
         self.enable_sp_by_pass = vc.model_config is not None and not vc.model_config.enforce_eager and enable_sp_by_pass
 
