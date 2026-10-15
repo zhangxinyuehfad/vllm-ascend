@@ -293,9 +293,17 @@ class AscendDSABackend(AttentionBackend):
             return AscendDSAPCPImpl
         return AscendDSAImpl
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        return [2, 4, 8, 16, 32, 64, 128]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            return [2, 4, 8, 16, 32, 64, 128]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            return [2, 4, 8, 16, 32, 64, 128]
 
 
 class AscendDSAC4Backend(AscendDSABackend):
@@ -303,11 +311,21 @@ class AscendDSAC4Backend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C4"
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        # Align with upstream's logical block-size contract: Ascend's physical
-        # 32/64/128-token C4 pages represent 128/256/512 raw scheduler tokens.
-        return [128, 256, 512]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            # Align with upstream's logical block-size contract: Ascend's physical
+            # 32/64/128-token C4 pages represent 128/256/512 raw scheduler tokens.
+            return [128, 256, 512]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            # Align with upstream's logical block-size contract: Ascend's physical
+            # 32/64/128-token C4 pages represent 128/256/512 raw scheduler tokens.
+            return [128, 256, 512]
 
 
 class AscendDSAC128Backend(AscendDSABackend):
@@ -315,11 +333,21 @@ class AscendDSAC128Backend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C128"
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        # Align with upstream's logical block-size contract: Ascend's physical
-        # 32/64/128-token C128 pages represent 4096/8192/16384 raw scheduler tokens.
-        return [4096, 8192, 16384]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            # Align with upstream's logical block-size contract: Ascend's physical
+            # 32/64/128-token C128 pages represent 4096/8192/16384 raw scheduler tokens.
+            return [4096, 8192, 16384]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            # Align with upstream's logical block-size contract: Ascend's physical
+            # 32/64/128-token C128 pages represent 4096/8192/16384 raw scheduler tokens.
+            return [4096, 8192, 16384]
 
 
 class AscendDSASWABackend(AscendDSABackend):
@@ -327,9 +355,17 @@ class AscendDSASWABackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_SWA"
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        return [32, 64, 128]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            return [32, 64, 128]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            return [32, 64, 128]
 
 
 class AscendDSAC4StateBackend(AscendDSABackend):
@@ -337,9 +373,17 @@ class AscendDSAC4StateBackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C4_STATE"
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        return [2, 4, 8]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            return [2, 4, 8]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            return [2, 4, 8]
 
 
 class AscendDSAC128StateBackend(AscendDSABackend):
@@ -347,11 +391,21 @@ class AscendDSAC128StateBackend(AscendDSABackend):
     def get_name() -> str:
         return "ASCEND_DSA_C128_STATE"
 
-    @staticmethod
-    def get_supported_kernel_block_sizes() -> list[int]:
-        if get_current_hardware_profile().supports(HardwareCapability.DSA_C128_STATE_SMALL_BLOCK_SIZES):
-            return [4, 8, 16]
-        return [8, 16, 32]
+    if vllm_version_is("0.31.0"):
+
+        @staticmethod
+        def get_supported_kernel_block_sizes() -> list[int]:
+            if get_current_hardware_profile().supports(HardwareCapability.DSA_C128_STATE_SMALL_BLOCK_SIZES):
+                return [4, 8, 16]
+            return [8, 16, 32]
+
+    else:
+
+        @staticmethod
+        def get_supported_kernel_block_sizes(kv_cache_spec=None) -> list[int]:
+            if get_current_hardware_profile().supports(HardwareCapability.DSA_C128_STATE_SMALL_BLOCK_SIZES):
+                return [4, 8, 16]
+            return [8, 16, 32]
 
 
 @dataclass
