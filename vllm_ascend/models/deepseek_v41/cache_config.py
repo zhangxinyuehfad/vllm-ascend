@@ -79,7 +79,7 @@ def make_mla_cache_spec(*, block_size, head_size, compress_ratio):
         dtype=dtype,
         tokens_per_state=compress_ratio,
         model_version="deepseek_v41",
-        storage_block_size=block_size // compress_ratio,
+        **declared_kwarg(AscendMLAAttentionSpec, "storage_block_size", block_size // compress_ratio),
         scale_dtype=scale_dtype,
     )
 
@@ -103,7 +103,7 @@ def make_index_cache_spec(*, block_size, head_size, compress_ratio):
         dtype=dtype,
         tokens_per_state=compress_ratio,
         model_version="deepseek_v41",
-        storage_block_size=block_size // compress_ratio,
+        **declared_kwarg(AscendMLAAttentionSpec, "storage_block_size", block_size // compress_ratio),
         scale_dim=scale_dim,
         scale_dtype=scale_dtype,
     )
@@ -120,7 +120,7 @@ def make_folded_index_cache_spec(*, block_size):
         dtype=torch.uint8,
         tokens_per_state=INDEX_FOLD_ROWS,
         model_version="deepseek_v41",
-        storage_block_size=block_size // INDEX_FOLD_ROWS,
+        **declared_kwarg(AscendMLAAttentionSpec, "storage_block_size", block_size // INDEX_FOLD_ROWS),
     )
 
 
