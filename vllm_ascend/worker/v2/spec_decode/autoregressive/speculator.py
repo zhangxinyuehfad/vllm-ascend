@@ -65,7 +65,7 @@ from vllm_ascend.worker.v2.spec_decode.pcp_utils import (
 # vLLM #60335 renamed `autoregressive` to `target_dependent_ar` on main;
 # the release lane (v0.31.0) still ships the old module and class name.
 if vllm_version_is("0.31.0"):
-    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
+    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (  # type: ignore[import-not-found]
         AutoRegressiveSpeculator as _UpstreamAutoRegressiveSpeculator,
     )
 else:
@@ -409,7 +409,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
 
     else:
 
-        def propose(
+        def propose(  # type: ignore[misc]
             self,
             input_batch: InputBatch,
             attn_metadata: dict[str, Any],
@@ -429,7 +429,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
             is_profile: Any = None,
             num_speculative_tokens: int | None = None,
         ):
-            return self._propose_impl(
+            return self._propose_impl(  # type: ignore[call-arg]
                 input_batch,
                 attn_metadata,
                 slot_mappings,
@@ -449,7 +449,7 @@ class AscendAutoRegressiveSpeculator(LmheadTPDraftSamplingMixin, _UpstreamAutoRe
                 num_speculative_tokens,
             )
 
-        def _propose_impl(
+        def _propose_impl(  # type: ignore[misc]
             self,
             input_batch: InputBatch,
             attn_metadata: dict[str, Any],

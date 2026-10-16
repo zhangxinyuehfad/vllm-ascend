@@ -22,7 +22,9 @@ from vllm_ascend.worker.v2.spec_decode.autoregressive.aclgraph import AutoRegres
 # vLLM #60335 renamed the shared AR speculator module to `target_dependent_ar`
 # on main; the release lane (v0.31.0) still ships `autoregressive`.
 if vllm_version_is("0.31.0"):
-    from vllm.v1.worker.gpu.spec_decode.autoregressive import speculator as vllm_speculator_module
+    from vllm.v1.worker.gpu.spec_decode.autoregressive import (  # type: ignore[import-not-found]
+        speculator as vllm_speculator_module,
+    )
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar import speculator as vllm_speculator_module
 

@@ -258,7 +258,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
                     self.vllm_config.cache_config.block_size
                 )
             else:
-                dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(
+                dflash_speculator.prepare_dflash_inputs = prepare_dflash_inputs_factory(  # type: ignore[call-arg]
                     self.vllm_config.cache_config.block_size,
                     block_tables,
                 )
@@ -528,7 +528,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
 
     else:
 
-        def propose(
+        def propose(  # type: ignore[misc]
             self,
             input_batch: InputBatch,
             attn_metadata: dict[str, Any],
@@ -548,7 +548,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
             is_profile: bool = False,
             num_speculative_tokens: int | None = None,
         ) -> torch.Tensor:
-            return self._propose_impl(
+            return self._propose_impl(  # type: ignore[call-arg]
                 input_batch,
                 attn_metadata,
                 slot_mappings,
@@ -568,7 +568,7 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
                 num_speculative_tokens,
             )
 
-        def _propose_impl(
+        def _propose_impl(  # type: ignore[misc]
             self,
             input_batch: InputBatch,
             attn_metadata: dict[str, Any],

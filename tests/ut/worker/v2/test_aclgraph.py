@@ -15,7 +15,7 @@ from vllm_ascend.utils import vllm_version_is
 # vLLM #60335 moved this manager to `target_dependent_ar` on main; the
 # release lane (v0.31.0) still ships `autoregressive.cudagraph_utils`.
 if vllm_version_is("0.31.0"):
-    from vllm.v1.worker.gpu.spec_decode.autoregressive.cudagraph_utils import (
+    from vllm.v1.worker.gpu.spec_decode.autoregressive.cudagraph_utils import (  # type: ignore[import-not-found]
         SpeculatorCudaGraphManager,
     )
 else:

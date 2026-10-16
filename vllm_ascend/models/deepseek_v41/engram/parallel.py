@@ -25,7 +25,7 @@ from vllm_ascend.utils import (
 # `common.engram` on main; the release lane (v0.31.0) still ships it under
 # `nvidia.engram`.
 if vllm_version_is("0.31.0"):
-    from vllm.models.deepseek_v41.nvidia.engram import (
+    from vllm.models.deepseek_v41.nvidia.engram import (  # type: ignore[import-not-found]
         engram_head_shard_rank as engram_head_shard_rank,
     )
 else:

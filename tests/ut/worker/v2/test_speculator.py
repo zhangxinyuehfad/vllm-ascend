@@ -3,6 +3,7 @@
 
 from contextlib import nullcontext
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,7 +15,9 @@ from vllm_ascend.utils import vllm_version_is
 # vLLM #60335 renamed the AR speculator class/module on main; the release
 # lane (v0.31.0) still ships `autoregressive.speculator.AutoRegressiveSpeculator`.
 if vllm_version_is("0.31.0"):
-    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import AutoRegressiveSpeculator
+    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (  # type: ignore[import-not-found]
+        AutoRegressiveSpeculator,
+    )
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar.speculator import (
         TargetDependentARSpeculator as AutoRegressiveSpeculator,
@@ -209,7 +212,7 @@ def test_generate_draft_updates_attn_metadata():
     speculator._update_decode_attn_metadata = MagicMock()
     with patch.object(AutoRegressiveSpeculator, "_generate_draft") as parent_generate:
         speculator._generate_draft(2, 4, attn_metadata, None, None)
-    expected_args = (2, 4, attn_metadata, None, None, CUDAGraphMode.NONE)
+    expected_args: tuple[Any, ...] = (2, 4, attn_metadata, None, None, CUDAGraphMode.NONE)
     if not vllm_version_is("0.31.0"):
         # vLLM #60335 added `num_speculative_steps` on main.
         expected_args = (*expected_args, 3)
@@ -246,7 +249,7 @@ def test_multi_step_decode_non_full_graph():
     seq_lens_cpu_upper_bound = torch.tensor([10, 20], dtype=torch.int32)
     with patch.object(AutoRegressiveSpeculator, "_multi_step_decode") as parent_decode:
         speculator._multi_step_decode(2, False, batch_desc, None, seq_lens_cpu_upper_bound)
-    expected_args = (2, False, batch_desc, None, seq_lens_cpu_upper_bound)
+    expected_args: tuple[Any, ...] = (2, False, batch_desc, None, seq_lens_cpu_upper_bound)
     if not vllm_version_is("0.31.0"):
         # vLLM #60335 added `num_speculative_steps` on main.
         expected_args = (*expected_args, 3)

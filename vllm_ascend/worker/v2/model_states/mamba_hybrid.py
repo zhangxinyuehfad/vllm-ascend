@@ -81,6 +81,11 @@ class AscendMambaHybridModelState(MambaHybridModelState, AscendModelState):
     time right after that layer's KV load finishes.
     """
 
+    # Annotated locally because mypy (``--follow-imports skip``) does not
+    # analyze the upstream base class body where these are defined.
+    _mamba_ctx: MambaSpecDecodeGPUContext | None
+    _mamba_state_copy_funcs: Any
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._layerwise_mamba_copy: _LayerwiseMambaCopyState | None = None
