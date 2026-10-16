@@ -146,7 +146,7 @@ class AscendPCPManager(PCPManager):
 
     else:
 
-        def __init__(
+        def __init__(  # type: ignore[misc]
             self,
             pcp_world_size: int,
             pcp_rank: int,

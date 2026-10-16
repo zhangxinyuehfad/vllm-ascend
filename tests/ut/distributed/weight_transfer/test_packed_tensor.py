@@ -463,7 +463,7 @@ def test_packed_broadcast_consumer_receives_and_loads_on_the_caller_stream():
     group = _make_group_mock()
     group.broadcast = MagicMock(
         side_effect=lambda tensor, **kwargs: (
-            log.append(("broadcast", kwargs.get("stream"))),
+            log.append(("broadcast", kwargs.get("stream"))),  # type: ignore[func-returns-value]
             tensor.copy_(next(payloads).view(torch.uint8)),
         )
     )

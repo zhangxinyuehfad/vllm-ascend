@@ -76,7 +76,9 @@ if not get_current_hardware_profile().supports(HardwareCapability.STANDARD_WORKE
     # vLLM #60335 renamed the shared AR speculator module to `target_dependent_ar`
     # on main; the release lane (v0.31.0) still ships `autoregressive`.
     if vllm_version_is("0.31.0"):
-        from vllm.v1.worker.gpu.spec_decode.autoregressive import speculator as _ar_spec
+        from vllm.v1.worker.gpu.spec_decode.autoregressive import (  # type: ignore[import-not-found]
+            speculator as _ar_spec,
+        )
     else:
         from vllm.v1.worker.gpu.spec_decode.target_dependent_ar import speculator as _ar_spec
 

@@ -566,7 +566,7 @@ if vllm_version_is("0.31.0"):
 
 else:
 
-    def _ascend_pool_bytes_per_block(
+    def _ascend_pool_bytes_per_block(  # type: ignore[misc]
         vllm_config: VllmConfig,
         kv_cache_groups: list[KVCacheGroupSpec],
     ) -> int:

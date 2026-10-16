@@ -32,7 +32,6 @@ from vllm.tokenizers.registry import resolve_tokenizer_args
 from vllm.v1.metrics.reader import Counter, Vector
 
 from tests.e2e.conftest import VllmRunner
-from vllm_ascend.utils import vllm_version_is
 
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 

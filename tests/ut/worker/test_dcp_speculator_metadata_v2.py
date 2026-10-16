@@ -21,7 +21,9 @@ from vllm_ascend.worker.dcp_utils import DCPManager
 # vLLM #60335 renamed the AR speculator class/module on main; the release
 # lane (v0.31.0) still ships `autoregressive.speculator.AutoRegressiveSpeculator`.
 if vllm_version_is("0.31.0"):
-    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import AutoRegressiveSpeculator
+    from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (  # type: ignore[import-not-found]
+        AutoRegressiveSpeculator,
+    )
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar.speculator import (
         TargetDependentARSpeculator as AutoRegressiveSpeculator,
