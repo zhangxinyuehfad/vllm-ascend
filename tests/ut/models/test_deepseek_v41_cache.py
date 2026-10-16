@@ -172,8 +172,8 @@ def test_owner_counts_nested_config_and_source_resolution(config, runtime):
     assert topology.kv_consumers(20) == tuple(range(20, 40))
     assert topology.layer(26).kv_source_layer == 20
     assert topology.layer(26).index_source_layer == 24
-    assert specs["model.layers.20.self_attn.long_kv_cache"].storage_block_size == 64
-    assert specs["model.layers.2.self_attn.long_kv_cache"].storage_block_size == 32
+    assert get_storage_block_size(specs["model.layers.20.self_attn.long_kv_cache"]) == 64
+    assert get_storage_block_size(specs["model.layers.2.self_attn.long_kv_cache"]) == 32
     assert "model.layers.20.self_attn.compressor.state_cache" not in specs
     assert type(specs["model.layers.2.self_attn.long_kv_cache"]) is AscendMLAAttentionSpec
     assert type(specs["model.layers.2.self_attn.indexer.k_cache"]) is AscendMLAAttentionSpec
@@ -1902,7 +1902,7 @@ def test_only_the_sliding_window_group_carries_the_length(runtime):
             dtype=torch.bfloat16,
             tokens_per_state=2,
             model_version="deepseek_v41",
-            storage_block_size=64,
+            **declared_kwarg(AscendMLAAttentionSpec, "storage_block_size", 64),
         ),
         [],
         runtime,
