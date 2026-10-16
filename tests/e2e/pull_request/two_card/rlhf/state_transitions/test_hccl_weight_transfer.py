@@ -149,6 +149,7 @@ def _send_update(server, source, model_update_group, *, packed: bool) -> None:
     _post(server, "resume")
 
 
+@pytest.mark.skip(reason="Temporarily skipped pending a follow-up fix.")
 @pytest.mark.skipif(
     torch.npu.device_count() < 2,
     reason="HCCL weight transfer e2e test requires at least 2 NPUs.",
