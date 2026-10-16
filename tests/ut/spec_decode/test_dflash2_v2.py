@@ -255,7 +255,10 @@ def test_dflash_input_preparation_restores_kernel_block_size_on_main(monkeypatch
     inputs[17] = 384  # Physical KV block size forwarded by the DFlash caller.
     inputs[-1] = True  # sample_from_anchor
 
-    dflash_module.prepare_dflash_inputs_factory(384, block_tables)(*inputs)
+    if vllm_version_is("0.31.0"):
+        dflash_module.prepare_dflash_inputs_factory(384)(*inputs)
+    else:
+        dflash_module.prepare_dflash_inputs_factory(384, block_tables)(*inputs)
 
     restored = kernel.call_args.args[17]
     if vllm_version_is("0.31.0"):
