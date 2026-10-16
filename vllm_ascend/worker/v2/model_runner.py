@@ -105,6 +105,7 @@ from vllm_ascend.utils import (
     lmhead_tp_pad_rows,
     set_potential_max_tokens,
     should_skip_allreduce_across_dp_group,
+    vllm_version_is,
 )
 from vllm_ascend.worker.device_metadata import TargetDeviceMetadata
 from vllm_ascend.worker.utils import disable_compilation
@@ -1124,7 +1125,9 @@ class NPUModelRunner(GPUModelRunner):
         logits = logits[:num_logits]
 
         # Dispatch tail mirrors GPUModelRunner.sample; refresh it on main bumps.
-        if grammar_output is not None:
+        invalid_drafts = None
+        # A diffusion prefill has no logit rows even when a bitmask row arrived.
+        if grammar_output is not None and logits.shape[0] > 0:
             # Apply grammar bitmask to the logits in-place.
             assert self.structured_outputs_worker is not None
             self.structured_outputs_worker.apply_grammar_bitmask(
@@ -1133,6 +1136,17 @@ class NPUModelRunner(GPUModelRunner):
                 grammar_output.structured_output_request_ids,
                 grammar_output.grammar_bitmask,
             )
+            if not vllm_version_is("0.31.0"):
+                # vLLM main's rejection sampler rejects drafts that were verified
+                # against a permissive grammar row; v0.31.0 has neither the
+                # `invalid_drafts` argument nor the helper that builds it.
+                from vllm.v1.worker.gpu.structured_outputs import grammar_invalid_drafts
+
+                invalid_drafts = grammar_invalid_drafts(
+                    input_batch,
+                    grammar_output.structured_output_request_ids,
+                    grammar_output.num_acceptable_drafts,
+                )
 
         if input_batch.num_draft_tokens == 0 or self.rejection_sampler is None:
             assert self.sampler is not None
@@ -1146,6 +1160,7 @@ class NPUModelRunner(GPUModelRunner):
                 input_batch,
                 # Draft logits are needed for probabilistic rejection sampling.
                 self.speculator.draft_logits,
+                *(() if vllm_version_is("0.31.0") else (invalid_drafts,)),
             )
 
         return sampler_output, sampler_output.num_sampled, sampler_output.num_rejected
