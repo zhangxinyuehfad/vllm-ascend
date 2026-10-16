@@ -25,6 +25,7 @@ data correctness is verified end-to-end.
 
 from __future__ import annotations
 
+import itertools
 import types
 from unittest.mock import MagicMock, patch
 
@@ -326,6 +327,251 @@ def test_packed_broadcast_consumer_handles_multiple_dtypes():
     assert received[1][1].dtype == torch.float32
     assert torch.equal(received[0][1].cpu(), f16)
     assert torch.equal(received[1][1].cpu(), f32)
+
+
+# ---------------------------------------------------------------------------
+# Stream contract: allocation, communication and load share one stream
+# ---------------------------------------------------------------------------
+
+
+class _QueuedStream:
+    """Stream whose device work only runs when the stream is synchronized.
+
+    NPU kernels are asynchronous, so a CPU test that wants to observe stream
+    ordering has to queue the work and run it on ``synchronize()``.
+    """
+
+    def __init__(self, fake_npu, name: str, log: list | None = None) -> None:
+        self.pending: list = []
+        self._fake_npu = fake_npu
+        self._name = name
+        self._log = log
+        self._previous = None
+
+    def synchronize(self) -> None:
+        if self._log is not None:
+            self._log.append(("sync", self))
+        while self.pending:
+            self.pending.pop(0)()
+
+    def __enter__(self) -> _QueuedStream:
+        self._previous = self._fake_npu.active
+        self._fake_npu.active = self
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self._fake_npu.active = self._previous
+
+    def __repr__(self) -> str:
+        return f"<npu stream {self._name}>"
+
+
+def _queueing_npu(log: list | None = None):
+    """Build a fake ``torch.npu`` whose streams queue their work.
+
+    ``fake_npu.current_stream()`` returns the active stream and a
+    ``with torch.npu.stream(s)`` block makes ``s`` active, matching the real
+    ``torch.npu`` stream context.
+    """
+    fake_npu = types.SimpleNamespace()
+    fake_npu.active = _QueuedStream(fake_npu, "default", log)
+    fake_npu.Stream = lambda *args, **kwargs: _QueuedStream(fake_npu, "created", log)
+    fake_npu.stream = lambda stream: stream
+    fake_npu.current_stream = lambda: fake_npu.active
+    return fake_npu
+
+
+def test_packed_broadcast_producer_packs_and_broadcasts_on_the_caller_stream():
+    """Packing a chunk and its collective both run on the caller's stream."""
+    log: list = []
+    fake_npu = _queueing_npu(log)
+    real_cat = torch.cat
+
+    def recording_cat(tensors, dim=0):
+        log.append(("pack", fake_npu.active))
+        return real_cat(tensors, dim=dim)
+
+    group = _make_group_mock()
+    group.broadcast = MagicMock(side_effect=lambda tensor, **kwargs: log.append(("broadcast", kwargs.get("stream"))))
+    chunks = [(str(index), torch.full((4,), index, dtype=torch.uint8)) for index in range(3)]
+    caller_stream = fake_npu.active
+
+    with patch.object(torch, "npu", fake_npu, create=True), patch.object(torch, "cat", recording_cat):
+        packed_broadcast_producer(
+            iterator=iter(chunks),
+            group=group,
+            src=0,
+            post_iter_func=lambda item: item[1],
+            buffer_size_bytes=1,  # every tensor overflows -> one chunk per tensor
+            num_buffers=2,
+        )
+
+    packs = [entry for entry in log if entry[0] == "pack"]
+    broadcasts = [entry for entry in log if entry[0] == "broadcast"]
+    assert len(packs) == len(broadcasts) == len(chunks)
+    assert all(pack == ("pack", caller_stream) for pack in packs)
+    # ``stream=None`` would resolve to a process-wide stream instead.
+    assert all(broadcast == ("broadcast", caller_stream) for broadcast in broadcasts)
+
+
+def test_packed_broadcast_producer_reuses_a_buffer_only_after_its_broadcast_ran():
+    """A packed buffer is only overwritten once its broadcast has run."""
+    num_buffers = 2
+    chunks = [torch.arange(4, dtype=torch.uint8) + 10 * index for index in range(2 * num_buffers + 1)]
+    arena = [torch.zeros(4, dtype=torch.uint8) for _ in range(num_buffers)]
+    arena_calls = itertools.count()
+    real_cat = torch.cat
+    received: list[torch.Tensor] = []
+
+    fake_npu = _queueing_npu()
+
+    def arena_cat(tensors, dim=0):
+        slot = next(arena_calls) % num_buffers
+        arena[slot].copy_(real_cat(tensors, dim=dim))
+        return arena[slot]
+
+    def queue_broadcast(tensor, **kwargs):
+        stream = kwargs.get("stream") or fake_npu.current_stream()
+
+        def read():
+            received.append(tensor.clone())
+
+        stream.pending.append(read)
+
+    group = _make_group_mock()
+    group.broadcast = MagicMock(side_effect=queue_broadcast)
+
+    with patch.object(torch, "npu", fake_npu, create=True), patch.object(torch, "cat", arena_cat):
+        packed_broadcast_producer(
+            iterator=iter([(str(index), chunk) for index, chunk in enumerate(chunks)]),
+            group=group,
+            src=0,
+            post_iter_func=lambda item: item[1],
+            buffer_size_bytes=1,
+            num_buffers=num_buffers,
+        )
+
+    assert len(received) == len(chunks)
+    assert sorted(tuple(tensor.tolist()) for tensor in received) == sorted(tuple(chunk.tolist()) for chunk in chunks)
+
+
+def test_packed_broadcast_consumer_receives_and_loads_on_the_caller_stream():
+    """Receiving a chunk and loading it both run on the caller's stream."""
+    log: list = []
+    fake_npu = _queueing_npu(log)
+    payloads = iter([torch.tensor([1.0, 2.0]), torch.tensor([3.0, 4.0]), torch.tensor([5.0, 6.0])])
+    group = _make_group_mock()
+    group.broadcast = MagicMock(
+        side_effect=lambda tensor, **kwargs: (
+            log.append(("broadcast", kwargs.get("stream"))),
+            tensor.copy_(next(payloads).view(torch.uint8)),
+        )
+    )
+    loaded: list[torch.Tensor] = []
+    caller_stream = fake_npu.active
+
+    def post_unpack(weights):
+        log.append(("load", fake_npu.active))
+        loaded.extend(tensor for _, tensor in weights)
+
+    with patch.object(torch, "npu", fake_npu, create=True):
+        packed_broadcast_consumer(
+            iterator=iter([(str(index), ([2], torch.float32)) for index in range(3)]),
+            group=group,
+            src=0,
+            post_unpack_func=post_unpack,
+            buffer_size_bytes=1,  # every tensor overflows -> one chunk per tensor
+            num_buffers=2,
+        )
+
+    assert [tensor.tolist() for tensor in loaded] == [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]
+    broadcasts = [entry for entry in log if entry[0] == "broadcast"]
+    loads = [entry for entry in log if entry[0] == "load"]
+    assert len(broadcasts) == len(loads) == 3
+    assert all(broadcast == ("broadcast", caller_stream) for broadcast in broadcasts)
+    assert all(load == ("load", caller_stream) for load in loads)
+
+
+@pytest.mark.parametrize("num_buffers", [1, 2, 3])
+def test_packed_broadcast_consumer_orders_cross_chunk_processing(num_buffers):
+    """A layer completed by a later chunk must see all earlier async loads.
+
+    CPU copies normally hide stream races. Queue them until synchronization,
+    like NPU kernels, and derive runtime weights only after the final shard.
+    Reload twice into the same runtime storage, as the graph-captured HCCL
+    transaction does.
+    """
+    fake_npu: types.SimpleNamespace
+
+    class QueuedStream:
+        def __init__(self):
+            self.pending = []
+
+        def synchronize(self):
+            while self.pending:
+                self.pending.pop(0)()
+
+        def __enter__(self):
+            self.previous = fake_npu.active
+            fake_npu.active = self
+            return self
+
+        def __exit__(self, *exc):
+            fake_npu.active = self.previous
+
+    default_stream = QueuedStream()
+    fake_npu = types.SimpleNamespace(
+        active=default_stream,
+        Stream=QueuedStream,
+        current_stream=lambda: fake_npu.active,
+        stream=lambda stream: stream,
+    )
+    num_shards = 2 * num_buffers + 1
+    expected = torch.arange(1, num_shards + 1, dtype=torch.float32)
+    source_weight = torch.zeros_like(expected)
+    runtime_weight = torch.zeros_like(expected)
+    runtime_ptr = runtime_weight.data_ptr()
+    loaded_order = []
+    processed_prefixes = []
+
+    def copy_shard(index, tensor):
+        source_weight[index].copy_(tensor[0])
+        loaded_order.append(index)
+        processed_prefixes.append(source_weight[: index + 1].sum().item())
+
+    def load_shards(weights):
+        for name, tensor in weights:
+            index = int(name)
+            fake_npu.current_stream().pending.append(lambda index=index, tensor=tensor: copy_shard(index, tensor))
+            if index == num_shards - 1:
+                fake_npu.current_stream().pending.append(lambda: runtime_weight.copy_(source_weight * 2))
+            # Let a later chunk's work run ahead of an earlier chunk's still
+            # queued kernels; a single ordered stream must still hold.
+            if index % 2:
+                fake_npu.current_stream().synchronize()
+
+    with patch.object(torch, "npu", fake_npu):
+        for _ in range(2):
+            source_weight.zero_()
+            loaded_order.clear()
+            processed_prefixes.clear()
+            payloads = iter(expected.split(1))
+            group = _make_group_mock()
+            group.broadcast.side_effect = lambda tensor, payloads=payloads, **kwargs: tensor.copy_(
+                next(payloads).view(torch.uint8)
+            )
+            packed_broadcast_consumer(
+                iterator=iter((str(index), ([1], torch.float32)) for index in range(num_shards)),
+                group=group,
+                src=0,
+                post_unpack_func=load_shards,
+                buffer_size_bytes=1,
+                num_buffers=num_buffers,
+            )
+            torch.testing.assert_close(runtime_weight, expected * 2)
+            assert runtime_weight.data_ptr() == runtime_ptr
+            assert loaded_order == list(range(num_shards))
+            assert processed_prefixes == expected.cumsum(0).tolist()
 
 
 # ---------------------------------------------------------------------------
