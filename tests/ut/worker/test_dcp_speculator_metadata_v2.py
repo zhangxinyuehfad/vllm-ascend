@@ -151,9 +151,18 @@ def _speculator(monkeypatch, kind, architecture, width, padded, step, use_dcp=Tr
                 seq_lens_cpu = common.seq_lens
             return SimpleNamespace(common=common, decode=decode, seq_lens_cpu=seq_lens_cpu.clone())
 
-    spec.attn_groups = [
-        [SimpleNamespace(get_metadata_builder=lambda _: RecordingBuilder(), layer_names=["draft.layer"])]
-    ]
+    class RecordingAttnGroup:
+        # vLLM main (#56723) calls the group's build_metadata; v0.31.0 resolves
+        # the builder itself and calls build(common_prefix_len, metadata).
+        layer_names = ["draft.layer"]
+
+        def get_metadata_builder(self, ubatch_idx=0):
+            return RecordingBuilder()
+
+        def build_metadata(self, common_attn_metadata, ubatch_idx=0, **kwargs):
+            return self.get_metadata_builder(ubatch_idx).build(0, common_attn_metadata)
+
+    spec.attn_groups = [[RecordingAttnGroup()]]
 
     def prepare_device(out, seq_lens, num_reqs, size, rank, interleave):
         out.zero_()
