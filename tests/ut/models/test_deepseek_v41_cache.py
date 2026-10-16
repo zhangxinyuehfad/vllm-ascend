@@ -1902,7 +1902,8 @@ def test_only_the_sliding_window_group_carries_the_length(runtime):
             dtype=torch.bfloat16,
             tokens_per_state=2,
             model_version="deepseek_v41",
-            **declared_kwarg(AscendMLAAttentionSpec, "storage_block_size", 64),
+            # vLLM main (#57169) dropped MLA `storage_block_size`; v0.31.0 declares it.
+            **({"storage_block_size": 64} if vllm_version_is("0.31.0") else {}),
         ),
         [],
         runtime,
