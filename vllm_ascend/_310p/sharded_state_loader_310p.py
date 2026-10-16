@@ -45,10 +45,12 @@ class ShardedStateLoader310(ShardedStateLoader):
         state_dict = ShardedStateLoader._filter_subtensors(model.state_dict())
 
         # vLLM main split DEFAULT_PATTERN into separate TP-only and PP+TP spellings.
-        pattern = (
+        # The release lane still declares the combined default. Bind a fresh
+        # local: `pattern` is the `str | None` parameter and keeps that type.
+        shard_pattern = (
             ShardedStateLoader.DEFAULT_PATTERN if vllm_version_is("0.31.0") else ShardedStateLoader.TP_ONLY_PATTERN
         )
-        filename = pattern.format(rank=rank, part=part_idx)
+        filename = shard_pattern.format(rank=rank, part=part_idx)
         save_file(
             state_dict,
             os.path.join(path, filename),

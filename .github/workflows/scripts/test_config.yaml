@@ -72,8 +72,6 @@ skip_tests:
   - tests/e2e/pull_request/two_card/aclgraph/test_aclgraph_capture_replay.py
   # Temporarily skipped: this test is currently broken
   - tests/e2e/pull_request/four_card/spec_decode/test_mtp_step3p5.py
-  # Temporarily skipped pending a follow-up fix.
-  - tests/e2e/pull_request/two_card/rlhf/state_transitions/test_hccl_weight_transfer.py
 
 # === Accuracy Tests ===
 # The accuracy tests. When at least one of these files is selected,
