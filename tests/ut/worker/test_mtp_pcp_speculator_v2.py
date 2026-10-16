@@ -33,6 +33,9 @@ from vllm.v1.worker.gpu.spec_decode.mtp.speculator import MTPSpeculator
 
 from vllm_ascend.utils import vllm_version_is
 
+# vLLM #60754 renamed the DP-sync argument to `dp_sync_state` on main.
+_DP_SYNC_KWARG = "dp_sync" if vllm_version_is("0.31.0") else "dp_sync_state"
+
 # vLLM #60335 renamed the AR speculator class/module on main; the release
 # lane (v0.31.0) still ships `autoregressive.speculator.AutoRegressiveSpeculator`.
 if vllm_version_is("0.31.0"):
@@ -961,7 +964,7 @@ def test_propose_sync_follows_draft_token_layout(speculator_cls, parent_cls, rep
                 dp_size=2,
                 dp_rank=0,
                 need_eager=True,
-                dp_sync=args[11],
+                **{_DP_SYNC_KWARG: args[11]},
             )
         assert sync.call_count == int(replicated_pcp)
         return expected
@@ -986,7 +989,7 @@ def test_propose_sync_follows_draft_token_layout(speculator_cls, parent_cls, rep
         actual = speculator.propose(
             input_batch,
             *[MagicMock() for _ in range(10)],
-            dp_sync=target_sync,
+            **{_DP_SYNC_KWARG: target_sync},
         )
 
     assert actual is expected

@@ -151,7 +151,11 @@ def test_decode_sharding_does_not_add_a_parallel_config_field():
         hardware_profile.return_value.supports.return_value = False
         _setup_worker_and_scheduler(config, ascend_config)
 
-    assert not hasattr(parallel_config, "pcp_shard_decode_requests")
+    if vllm_version_is("0.31.0"):
+        assert not hasattr(parallel_config, "pcp_shard_decode_requests")
+    else:
+        # vLLM main declares this on ParallelConfig itself.
+        assert parallel_config.pcp_shard_decode_requests is True
     replace(parallel_config)
     assert is_pcp_decode_sharding_enabled(config) is True
 
@@ -1099,8 +1103,10 @@ def test_sample_tokens_uses_global_batch_only_on_non_last_pp_rank(
     runner.prompt_logprobs_worker = None
     # vLLM main added these ExecuteModelState fields.
     state_kwargs: dict = {}
-    state_kwargs["dp_sync"] = None
+    state_kwargs["dp_sync" if vllm_version_is("0.31.0") else "dp_sync_state"] = None
     state_kwargs["cudagraph_stats"] = None
+    if not vllm_version_is("0.31.0"):
+        state_kwargs["num_spec_tokens_to_schedule"] = 0
     runner.execute_model_state = vllm_model_runner.ExecuteModelState(
         input_batch=local_batch,
         attn_metadata=None,
