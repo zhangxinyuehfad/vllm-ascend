@@ -737,11 +737,11 @@ class TestKVPoolWorkerHelpers(unittest.TestCase):
         worker.m_store = MagicMock()
         worker.token_database = MagicMock()
 
-        def process_token_key_strings(token_len, block_hashes, mask_num, kv_cache_group_id, chunk_filter):
+        def process_token_key_strings(token_len, block_hashes, mask_num, kv_cache_group_id, chunk_mask):
             return [
                 (start, start + 128, f"key{start // 128}", f"h{start // 128}".encode())
                 for start in range(mask_num, token_len, 128)
-                if chunk_filter(start)
+                if chunk_mask is None or (start // 128 < len(chunk_mask) and chunk_mask[start // 128])
             ]
 
         worker.token_database.process_token_key_strings.side_effect = process_token_key_strings
@@ -774,7 +774,7 @@ class TestKVPoolWorkerHelpers(unittest.TestCase):
         store_mask.assert_not_called()
         worker.token_database.process_tokens.assert_not_called()
 
-    def test_external_coordinator_lookup_preseeds_hbm_hits(self):
+    def test_external_coordinator_lookup_preserves_hbm_hits(self):
         cls = self._make_worker_class()
         worker = self._make_lookup_worker(cls, self._make_sparse_swa_coordinator())
         worker.m_store.exists.return_value = [1]
@@ -792,7 +792,7 @@ class TestKVPoolWorkerHelpers(unittest.TestCase):
                 hbm_hit_tokens=128,
             )
 
-        # The locally computed block is preseeded and never queried; only the
+        # The locally computed block is recognized without a query; only the
         # tail block beyond the HBM hit goes to the pool.
         self.assertEqual(hit, 256)
         worker.m_store.exists.assert_called_once_with(["key1"])
@@ -1772,6 +1772,46 @@ class TestKVPoolWorkerProcessLayerData(unittest.TestCase):
             self.assertEqual(layer_tasks, [])
         for layer_tasks in worker.layer_load_tasks:
             self.assertEqual(layer_tasks, [])
+
+    def test_layerwise_prefetch_window_advances_with_model_layer(self):
+        """load(L) is submitted at model layer max(0, L - P), for every shard.
+
+        A rank owns only part of the layers under KVPP. A window counted in
+        local submissions skips the layers a rank does not own, so a rank that
+        owns a late shard requests its whole partition during the first model
+        layers: the transfer then runs at the front of the forward and competes
+        with compute instead of overlapping the P layers before its consumer.
+        """
+        prefetch = 2
+        for owned in ([0, 1, 2, 3, 4, 5, 6, 7], [5, 6, 7], [0, 1, 2]):
+            with self.subTest(owned=owned):
+                worker = make_worker(self, use_layerwise=True)
+                worker.num_layers = 8
+                worker.num_prefetch_layers = prefetch
+                worker.current_layer = 0
+                worker.next_layer_to_submit = 0
+                worker.prefetch_layer_map = {}
+                worker.layer_load_tasks = [[object()] if layer in owned else [] for layer in range(8)]
+                recv_thread = MagicMock()
+                worker.kv_recv_thread = recv_thread
+
+                submitted_at: dict[int, int] = {}
+                for model_layer in range(8):
+                    worker.current_layer = model_layer
+                    first_new = recv_thread.add_request.call_count
+                    worker._submit_ready_layer_loads()
+                    for call_index in range(first_new, recv_thread.add_request.call_count):
+                        task = recv_thread.add_request.call_args_list[call_index].args[0]
+                        self.assertNotIn(task.layer_id, submitted_at, "layer submitted twice")
+                        submitted_at[task.layer_id] = model_layer
+
+                self.assertEqual(set(submitted_at), set(owned))
+                for layer_id in owned:
+                    self.assertEqual(
+                        submitted_at[layer_id],
+                        max(0, layer_id - prefetch),
+                        f"layer {layer_id} submitted at the wrong model layer",
+                    )
 
     def test_empty_layerwise_step_reowns_task_lists(self):
         worker = self._make_worker()
