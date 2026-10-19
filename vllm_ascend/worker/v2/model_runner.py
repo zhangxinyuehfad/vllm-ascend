@@ -1142,19 +1142,6 @@ class NPUModelRunner(GPUModelRunner):
         return sampler_output, sampler_output.num_sampled, sampler_output.num_rejected
 
     @contextmanager
-    def _cap_parallel_draft_dummy_reqs(self, uniform_decode: bool):
-        # Profiling can exceed the speculator's query buffer.
-        original_max_num_reqs = self.max_num_reqs
-        if self.speculator is not None and not uniform_decode:
-            # Speculators without num_query_per_req use one query row per request.
-            query_width = getattr(self.speculator, "num_query_per_req", 1)
-            self.max_num_reqs = min(original_max_num_reqs, self.max_num_tokens // query_width)
-        try:
-            yield
-        finally:
-            self.max_num_reqs = original_max_num_reqs
-
-    @contextmanager
     def _preserve_dummy_query_tokens(self, num_tokens: int, uniform_decode: bool):
         dummy_query_tokens: int | None = None
         if (
@@ -1231,9 +1218,6 @@ class NPUModelRunner(GPUModelRunner):
             self._cpp_profile_dummy(profile_cpp),
             # Preserve scheduled query tokens before PIECEWISE graph padding.
             self._preserve_dummy_query_tokens(num_tokens, uniform_decode),
-            # TODO: Remove this context and its use after the next main2main
-            # includes https://github.com/vllm-project/vllm/pull/56448.
-            self._cap_parallel_draft_dummy_reqs(uniform_decode),
             skip_ring_state_update(skip_ring),
             load_balance_ctx,
         ):

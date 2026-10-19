@@ -70,9 +70,6 @@ def test_adaptive_tail_dummy_run_balances_moe_routing(adaptive_verification, con
     runner.input_buffers = SimpleNamespace(dummy_num_tokens=None)
     runner.compilation_config = SimpleNamespace(cudagraph_mode=CUDAGraphMode.NONE)
     runner.debugger = None
-    runner.max_num_reqs = 32
-    runner.max_num_tokens = 256
-    runner.speculator = None
     runner.adaptive_verification = adaptive_verification
     runner.ascend_config = SimpleNamespace(xlite_graph_config=SimpleNamespace(enabled=False))
     runner.eplb = Mock()
