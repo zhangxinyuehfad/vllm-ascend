@@ -52,16 +52,20 @@ else:
         # ``block_size`` is restored, per group.
         kernel_block_sizes = getattr(block_tables, "kernel_block_sizes", None)
         input_block_tables = getattr(block_tables, "input_block_tables", None)
-        if kernel_block_sizes is None or input_block_tables is None:
+        if block_tables is not None and (kernel_block_sizes is None or input_block_tables is None):
             raise RuntimeError(
                 "DFlash on vLLM main needs AscendBlockTables.kernel_block_sizes and "
                 "input_block_tables to restore the kernel block size"
             )
         # The upstream caller passes ``input_block_tables[gid]`` verbatim, so the
-        # per-group kernel block size is looked up by tensor identity.
-        kernel_block_size_by_table = {
-            id(table): int(size) for table, size in zip(input_block_tables, kernel_block_sizes)
-        }
+        # per-group kernel block size is looked up by tensor identity. Callers
+        # that do not supply Ascend block tables keep the physical size forwarded
+        # by the DFlash caller.
+        kernel_block_size_by_table = (
+            {id(table): int(size) for table, size in zip(input_block_tables, kernel_block_sizes)}
+            if kernel_block_sizes is not None and input_block_tables is not None
+            else {}
+        )
 
         def prepare_with_block_size(
             input_buffers: InputBuffers,
@@ -95,7 +99,10 @@ else:
         ) -> None:
             kernel_block_size = kernel_block_size_by_table.get(id(block_table))
             if kernel_block_size is None:
-                raise RuntimeError("DFlash received a block table unknown to AscendBlockTables")
+                if kernel_block_size_by_table:
+                    raise RuntimeError("DFlash received a block table unknown to AscendBlockTables")
+                # No Ascend block tables were supplied; keep the caller's size.
+                kernel_block_size = block_size
             prepare_dflash_inputs(
                 input_buffers,
                 query_slot_mapping,

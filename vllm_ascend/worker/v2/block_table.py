@@ -30,6 +30,12 @@ from vllm_ascend.utils import vllm_version_is
 class AscendBlockTables(BlockTables):
     """Block table for Ascend NPUs."""
 
+    # TODO: Refactor this path to follow vLLM #57169: keep block tables at
+    # manager-block granularity and move the kernel-block mapping into
+    # AttentionGroup (kernel_block_table / map_to_kernel_block_table). This class
+    # should then stop expanding rows in __init__/append_block_ids, and the
+    # Ascend slot-mapping kernel should consume the mapped block table.
+
     block_sizes_tensor: torch.Tensor
     kernel_block_sizes_tensor: torch.Tensor
 
