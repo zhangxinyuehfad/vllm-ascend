@@ -28,7 +28,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass, replace
 from functools import partial
 from multiprocessing import Manager
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 
 import numpy as np
 import torch
@@ -118,7 +118,6 @@ from vllm.v1.worker.ubatch_utils import (
 )
 from vllm.v1.worker.utils import (
     AttentionGroup,
-    prepare_kernel_block_sizes,
     raise_if_nan_logits,
 )
 
@@ -250,6 +249,7 @@ from vllm_ascend.worker.utils import (
     disable_compilation,
     get_single_raw_mla_backing,
     make_page_strided_cache_view,
+    prepare_ascend_kernel_block_sizes,
     row_major_strides,
 )
 from vllm_ascend.worker.v2.kvpp import KVPPRuntime
@@ -4936,9 +4936,7 @@ class NPUModelRunner(GPUModelRunner):
         # old first-spec scan over attn_groups cannot recognize them.
         self.need_accepted_tokens = kv_cache_config.has_mamba_layers
 
-        kernel_block_sizes = prepare_kernel_block_sizes(
-            kv_cache_config, self.attn_groups
-        )
+        kernel_block_sizes = prepare_ascend_kernel_block_sizes(kv_cache_config, self.attn_groups)
         self.kernel_block_sizes = kernel_block_sizes
         if not vllm_version_is("0.31.0"):
             # vLLM #57169/main splits metadata-builder creation out of
@@ -5005,7 +5003,8 @@ class NPUModelRunner(GPUModelRunner):
                 # size via select_common_block_size(), which requires an int.
                 # 310P keeps per-group candidate lists (e.g. [[128], [0]]), so
                 # collapse each group to its first candidate.
-                sizes = kernel_block_sizes if isinstance(kernel_block_sizes, list) else [kernel_block_sizes]
+                candidate_sizes = cast("list[int] | list[list[int]] | int", kernel_block_sizes)
+                sizes = candidate_sizes if isinstance(candidate_sizes, list) else [candidate_sizes]
                 draft_kernel_block_sizes = [
                     int(size[0] if isinstance(size, (list, tuple)) else size) for size in sizes
                 ]

@@ -1290,6 +1290,22 @@
 #       Remove this patch once upstream adds a backend hook for KV cache spec
 #       construction or v2 worker no longer depends on the shared v1 helper.
 #
+#   3. `vllm.v1.worker.gpu.attn_utils.prepare_kernel_block_sizes`
+#    Why:
+#       vLLM #57169 stops splitting a cache group whose KV tensors are
+#       block-outermost packed (`block_stride > layer_stride`). Ascend layerwise
+#       reuse aliases layers inside one physical slot (`layer_stride == 0`), so
+#       the group silently keeps the manager block size while NoPE SFA
+#       addresses 256-token blocks although its backend, metadata builder and
+#       block table all expect 128-token kernel blocks, so KV is read wrong.
+#    How：
+#       Re-run the selection with an alias-aware packing check
+#       (`0 < layer_stride < block_stride`) so alias layouts still split.
+#    Related PR (if no, explain why):
+#       https://github.com/vllm-project/vllm/pull/57169
+#    Future Plan:
+#       Remove this patch once upstream stops treating alias layouts as packed.
+#
 # ** 23. File: worker/patch_v2/patch_block_table.py**
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   1. `vllm.v1.worker.gpu.block_table.BlockTables`

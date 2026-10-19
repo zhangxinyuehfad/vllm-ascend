@@ -43,7 +43,7 @@ from vllm_ascend.attention.dsa_v1 import (
     AscendDSASWABackend,
 )
 from vllm_ascend.attention.mla_v1 import AscendMLABackend
-from vllm_ascend.attention.sfa_v1 import AscendSFAImpl, AscendSFAMetadataBuilder
+from vllm_ascend.attention.sfa_v1 import AscendSFABackend, AscendSFAImpl, AscendSFAMetadataBuilder
 from vllm_ascend.core.kv_cache_interface import (
     AscendMLAAttentionSpec,
     AscendSFAIndexerCacheSpec,
@@ -58,6 +58,7 @@ from vllm_ascend.patch.platform.patch_kv_cache_utils import (
     _get_kv_cache_config_deepseek_v4_main,
 )
 from vllm_ascend.utils import vllm_version_is
+from vllm_ascend.worker.utils import prepare_ascend_kernel_block_sizes
 from vllm_ascend.worker.v2 import attn_utils
 from vllm_ascend.worker.v2 import model_runner as v2_model_runner
 from vllm_ascend.worker.v2 import utils as v2_utils
@@ -1825,6 +1826,50 @@ def test_prepare_kernel_block_sizes_uses_logical_size_for_dsv4():
 
     assert get_storage_block_size(spec) == 32
     assert upstream_attn_utils.prepare_kernel_block_sizes(kv_cache_config, attn_groups) == [spec.block_size]
+
+
+def test_prepare_ascend_kernel_block_sizes_splits_alias_layouts():
+    """Layerwise alias layouts must keep their kernel block split (#57169)."""
+    spec = _make_dsv4_mla_spec(256, 4)
+    layer_names = ["model.layers.0.self_attn"]
+    attn_groups = [
+        [
+            AttentionGroup(
+                backend=AscendSFABackend,
+                layer_names=layer_names,
+                kv_cache_spec=spec,
+                kv_cache_group_id=0,
+            )
+        ]
+    ]
+    page_bytes = 4096
+
+    def selected_kernel_block_sizes(layer_stride: int, block_stride: int) -> list[int]:
+        kv_cache_config = KVCacheConfig(
+            num_blocks=2,
+            kv_cache_tensors=[
+                KVCacheTensor(
+                    size=2 * page_bytes,
+                    layers=layer_names,
+                    layer_stride=layer_stride,
+                    block_stride=block_stride,
+                )
+            ],
+            kv_cache_groups=[KVCacheGroupSpec(layer_names=layer_names, kv_cache_spec=spec)],
+        )
+        return prepare_ascend_kernel_block_sizes(kv_cache_config, attn_groups)
+
+    # Layerwise reuse aliases the layers inside one physical slot
+    # (`layer_stride == 0`) while the pages stay dense, so SFA still gets its
+    # 128-token kernel blocks instead of the 256-token manager block.
+    assert selected_kernel_block_sizes(layer_stride=0, block_stride=page_bytes) == [128]
+    if vllm_version_is("0.31.0"):
+        # The release lane has no packing heuristic and always splits.
+        assert selected_kernel_block_sizes(layer_stride=page_bytes, block_stride=2 * page_bytes) == [128]
+    else:
+        # Block-outermost packing interleaves the layers' pages between blocks,
+        # which no split can address, so #57169 keeps the manager block size.
+        assert selected_kernel_block_sizes(layer_stride=page_bytes, block_stride=2 * page_bytes) == [spec.block_size]
 
 
 @pytest.mark.parametrize(

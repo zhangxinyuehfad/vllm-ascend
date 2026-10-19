@@ -82,6 +82,11 @@ def test_init_keeps_explicit_kernel_block_sizes():
         kernel_block_sizes=[4],
     )
     assert tables.kernel_block_sizes == [4]
+    if not vllm_version_is("0.31.0"):
+        # vLLM #57169 dropped the expansion from BlockTables on main; a manager
+        # block still covers `blocks_per_kv_block` kernel entries (block 7 ->
+        # [14, 15]) because Ascend kernels address kernel blocks.
+        assert tables.blocks_per_kv_block == [2]
 
 
 def test_init_forwards_slot_mapping_enabled_on_newer_vllm():
