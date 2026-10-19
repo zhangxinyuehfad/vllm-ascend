@@ -267,3 +267,21 @@ def test_dflash_input_preparation_restores_kernel_block_size_on_main(monkeypatch
     else:
         assert restored == 128
     assert kernel.call_args.kwargs["kv_cache_block_size"] == 384
+
+
+@pytest.mark.skipif(vllm_version_is("0.31.0"), reason="main-only kernel block size restore")
+def test_dflash_input_preparation_rejects_unknown_block_table(monkeypatch):
+    kernel = MagicMock()
+    monkeypatch.setattr(dflash_module, "prepare_dflash_inputs_triton", kernel)
+    block_tables = SimpleNamespace(
+        kernel_block_sizes=[128],
+        input_block_tables=[torch.zeros(2, 4, dtype=torch.int32)],
+    )
+    inputs = [object() for _ in range(28)]
+    # A block table that AscendBlockTables never handed out.
+    inputs[16] = torch.zeros(2, 4, dtype=torch.int32)
+
+    with pytest.raises(RuntimeError, match="unknown to AscendBlockTables"):
+        dflash_module.prepare_dflash_inputs_factory(384, block_tables)(*inputs)
+
+    kernel.assert_not_called()
