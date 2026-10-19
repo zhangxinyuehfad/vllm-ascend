@@ -207,11 +207,12 @@ def test_run_model_broadcasts_replicated_hidden_states():
 def test_generate_draft_updates_attn_metadata():
     """Test updating attention metadata during draft generation."""
     speculator = AscendAutoRegressiveSpeculator.__new__(AscendAutoRegressiveSpeculator)
-    speculator.num_speculative_steps = 3
     attn_metadata = {"layer.0": MagicMock()}
     speculator._update_decode_attn_metadata = MagicMock()
     with patch.object(AutoRegressiveSpeculator, "_generate_draft") as parent_generate:
-        speculator._generate_draft(2, 4, attn_metadata, None, None)
+        # main always passes the per-batch step count; there is no fallback to
+        # the configured count.
+        speculator._generate_draft(2, 4, attn_metadata, None, None, num_speculative_steps=3)
     expected_args: tuple[Any, ...] = (2, 4, attn_metadata, None, None, CUDAGraphMode.NONE)
     if not vllm_version_is("0.31.0"):
         # vLLM #60335 added `num_speculative_steps` on main.
@@ -244,11 +245,10 @@ def test_multi_step_decode_full_graph():
 def test_multi_step_decode_non_full_graph():
     """Test multi-step decode without full graph execution."""
     speculator = AscendAutoRegressiveSpeculator.__new__(AscendAutoRegressiveSpeculator)
-    speculator.num_speculative_steps = 3
     batch_desc = SimpleNamespace(cg_mode=CUDAGraphMode.NONE)
     seq_lens_cpu_upper_bound = torch.tensor([10, 20], dtype=torch.int32)
     with patch.object(AutoRegressiveSpeculator, "_multi_step_decode") as parent_decode:
-        speculator._multi_step_decode(2, False, batch_desc, None, seq_lens_cpu_upper_bound)
+        speculator._multi_step_decode(2, False, batch_desc, None, seq_lens_cpu_upper_bound, num_speculative_steps=3)
     expected_args: tuple[Any, ...] = (2, False, batch_desc, None, seq_lens_cpu_upper_bound)
     if not vllm_version_is("0.31.0"):
         # vLLM #60335 added `num_speculative_steps` on main.
@@ -259,7 +259,6 @@ def test_multi_step_decode_non_full_graph():
 def test_multi_step_decode_forwards_explicit_speculative_steps():
     """main forwards the per-batch `num_speculative_steps` from `propose`."""
     speculator = AscendAutoRegressiveSpeculator.__new__(AscendAutoRegressiveSpeculator)
-    speculator.num_speculative_steps = 3
     batch_desc = SimpleNamespace(cg_mode=CUDAGraphMode.NONE)
     seq_lens_cpu_upper_bound = torch.tensor([10, 20], dtype=torch.int32)
     with patch.object(AutoRegressiveSpeculator, "_multi_step_decode") as parent_decode:

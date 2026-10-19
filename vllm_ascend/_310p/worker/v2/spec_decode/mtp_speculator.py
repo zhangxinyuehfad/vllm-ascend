@@ -41,11 +41,11 @@ from vllm_ascend.worker.v2.spec_decode.autoregressive.speculator import (
 # release lane (v0.31.0) still ships the old module and class name.
 if vllm_version_is("0.31.0"):
     from vllm.v1.worker.gpu.spec_decode.autoregressive.speculator import (
-        AutoRegressiveSpeculator as _UpstreamAutoRegressiveSpeculator,
+        AutoRegressiveSpeculator,
     )
 else:
     from vllm.v1.worker.gpu.spec_decode.target_dependent_ar.speculator import (
-        TargetDependentARSpeculator as _UpstreamAutoRegressiveSpeculator,
+        TargetDependentARSpeculator as AutoRegressiveSpeculator,
     )
 
 
@@ -287,7 +287,7 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
             """Skip Ascend metadata H2D under ACLGraph capture (pageable memcpy ban)."""
             # Call GPU AR generate_draft (sample + update_draft_inputs) without the
             # Ascend post-step ``seq_lens_cpu.copy_`` which is illegal while capturing.
-            _UpstreamAutoRegressiveSpeculator._generate_draft(
+            AutoRegressiveSpeculator._generate_draft(
                 self,
                 num_reqs,
                 num_tokens_padded,
@@ -315,7 +315,7 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
             """Skip Ascend metadata H2D under ACLGraph capture (pageable memcpy ban)."""
             # Call GPU AR generate_draft (sample + update_draft_inputs) without the
             # Ascend post-step ``seq_lens_cpu.copy_`` which is illegal while capturing.
-            _UpstreamAutoRegressiveSpeculator._generate_draft(
+            AutoRegressiveSpeculator._generate_draft(
                 self,
                 num_reqs,
                 num_tokens_padded,
@@ -324,7 +324,7 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
                 num_tokens_across_dp,
                 cudagraph_runtime_mode,
                 # vLLM #60335 added `num_speculative_steps` on main.
-                num_speculative_steps if num_speculative_steps is not None else self.num_speculative_steps,
+                num_speculative_steps,
             )
             if attn_metadata is None or torch.npu.is_current_stream_capturing():
                 return
@@ -425,10 +425,8 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
             use_full = batch_desc.cg_mode == CUDAGraphMode.FULL
             attn_metadata = None
             slot_mappings_by_layer = None
-            # vLLM #60335 passes the per-batch step count on main; the ACLGraph
-            # capture path may omit it, so fall back to the configured count.
-            steps = num_speculative_steps if num_speculative_steps is not None else self.num_speculative_steps
-            for step in range(1, steps):
+            # vLLM #60335 passes the per-batch step count on main.
+            for step in range(1, num_speculative_steps):
                 if not skip_attn and (self.advance_draft_positions or step == 1):
                     # Host slot_mapping + attn metadata must run outside capture.
                     slot_mappings_by_layer = self._compute_draft_slot_mappings(
@@ -468,5 +466,5 @@ class AscendMTPSpeculator310(AscendAutoRegressiveSpeculator, MTPSpeculator):
                         slot_mappings_by_layer,
                         num_tokens_across_dp=num_tokens_across_dp,
                         cudagraph_runtime_mode=CUDAGraphMode.NONE,
-                        num_speculative_steps=steps,
+                        num_speculative_steps=num_speculative_steps,
                     )

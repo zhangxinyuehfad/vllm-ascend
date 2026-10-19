@@ -432,44 +432,6 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
             mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None = None,
             is_profile: bool = False,
         ) -> torch.Tensor:
-            return self._propose_impl(
-                input_batch,
-                attn_metadata,
-                slot_mappings,
-                last_hidden_states,
-                aux_hidden_states,
-                num_sampled,
-                num_rejected,
-                last_sampled,
-                next_prefill_tokens,
-                temperature,
-                seeds,
-                dp_sync,
-                dummy_run,
-                skip_attn_for_dummy_run,
-                mm_inputs,
-                is_profile,
-            )
-
-        def _propose_impl(
-            self,
-            input_batch: InputBatch,
-            attn_metadata: dict[str, Any],
-            slot_mappings: dict[str, torch.Tensor],
-            last_hidden_states: torch.Tensor,
-            aux_hidden_states: list[torch.Tensor] | None,
-            num_sampled: torch.Tensor,
-            num_rejected: torch.Tensor,
-            last_sampled: torch.Tensor,
-            next_prefill_tokens: torch.Tensor,
-            temperature: torch.Tensor,
-            seeds: torch.Tensor,
-            dp_sync: Any,
-            dummy_run: bool,
-            skip_attn_for_dummy_run: bool,
-            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None,
-            is_profile: bool,
-        ) -> torch.Tensor:
             self.input_batch = input_batch
             assert self.input_batch is not None
             # Replicated drafts consume global requests, unlike sharded targets.
@@ -548,52 +510,12 @@ class AscendDSparkSpeculator(LmheadTPDraftSamplingMixin, DSparkSpeculator):
             is_profile: bool = False,
             num_speculative_tokens: int | None = None,
         ) -> torch.Tensor:
-            return self._propose_impl(  # type: ignore[call-arg]
-                input_batch,
-                attn_metadata,
-                slot_mappings,
-                last_hidden_states,
-                aux_hidden_states,
-                num_sampled,
-                num_rejected,
-                last_sampled,
-                next_prefill_tokens,
-                temperature,
-                seeds,
-                dp_sync_state,
-                dummy_run,
-                skip_attn_for_dummy_run,
-                mm_inputs,
-                is_profile,
-                num_speculative_tokens,
-            )
-
-        def _propose_impl(  # type: ignore[misc]
-            self,
-            input_batch: InputBatch,
-            attn_metadata: dict[str, Any],
-            slot_mappings: dict[str, torch.Tensor],
-            last_hidden_states: torch.Tensor,
-            aux_hidden_states: list[torch.Tensor] | None,
-            num_sampled: torch.Tensor,
-            num_rejected: torch.Tensor,
-            last_sampled: torch.Tensor,
-            next_prefill_tokens: torch.Tensor,
-            temperature: torch.Tensor,
-            seeds: torch.Tensor,
-            dp_sync: Any,
-            dummy_run: bool,
-            skip_attn_for_dummy_run: bool,
-            mm_inputs: tuple[list[torch.Tensor], torch.Tensor] | None,
-            is_profile: bool,
-            num_speculative_tokens: int | None,
-        ) -> torch.Tensor:
             self.input_batch = input_batch
             assert self.input_batch is not None
             # Replicated drafts consume global requests, unlike sharded targets.
             # Adaptive verification also negotiates the draft shape independently.
             # Every DP rank must synchronize the draft batch independently.
-            sync_state = dp_sync
+            sync_state = dp_sync_state
             if self.replicated_pcp or (self.enable_adaptive_verification and not is_profile):
                 sync_state = None
             if dummy_run and skip_attn_for_dummy_run:
