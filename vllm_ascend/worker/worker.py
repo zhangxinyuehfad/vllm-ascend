@@ -633,7 +633,8 @@ class NPUWorker(WorkerBase):
         # --kv-cache-memory. Still run profile_run() to compile the model,
         # but skip the memory profiling calculation entirely.
         if kv_cache_memory_bytes := self.cache_config.kv_cache_memory_bytes:
-            self.model_runner.profile_run(randomize_inputs=randomize_inputs)
+            with set_current_vllm_config(self.vllm_config):
+                self.model_runner.profile_run(randomize_inputs=randomize_inputs)
             logger.info(
                 "Initial free memory %.2f GiB, reserved %.2f GiB for KV Cache "
                 "as specified by kv_cache_memory_bytes, skipping memory profiling. "
@@ -651,10 +652,13 @@ class NPUWorker(WorkerBase):
 
         # Execute a forward pass with dummy inputs to profile the memory usage
         # of the model.
-        with memory_profiling(
-            self.init_snapshot,
-            weights_memory=int(self.model_runner.model_memory_usage),
-        ) as profile_result:
+        with (
+            memory_profiling(
+                self.init_snapshot,
+                weights_memory=int(self.model_runner.model_memory_usage),
+            ) as profile_result,
+            set_current_vllm_config(self.vllm_config),
+        ):
             self.model_runner.profile_run(randomize_inputs=randomize_inputs)
 
             # Record torch peak INSIDE the context and BEFORE graph capture,
