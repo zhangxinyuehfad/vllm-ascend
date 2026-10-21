@@ -1,0 +1,8 @@
+pr: 9039
+entries:
+  - category: dependency
+    text: >-
+      Aligned Kimi-K3 MLA with vLLM main, which now fuses the output gate into
+      the QKV-A projection. Ascend splits the trailing gate shard out on the
+      general MLA path and bypasses the fused MLAPO/PROLOG_V3 writers for those
+      layers.
