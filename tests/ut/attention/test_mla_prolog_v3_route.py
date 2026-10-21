@@ -937,7 +937,7 @@ def test_forward_routes_strided_cache_with_runtime_exclusions(
     impl._decode_requires_current_kv = MagicMock(return_value=requires_current_kv)
     impl._cache_requires_prolog_v3_writer = MagicMock(return_value=True)
     impl.mla_preprocess_prolog_v3 = MagicMock(return_value=(None, None))
-    impl._mla_preprocess = MagicMock(return_value=(None, None))
+    impl._mla_preprocess = MagicMock(return_value=(None, None, None))
     impl.o_proj = MagicMock(side_effect=lambda tensor, **_kwargs: (tensor,))
 
     hidden = torch.zeros(3, 128)
@@ -981,7 +981,7 @@ def test_forward_falls_back_when_dcp_current_buffer_is_too_small():
     impl._decode_requires_current_kv = MagicMock(return_value=True)
     impl._cache_requires_prolog_v3_writer = MagicMock(return_value=True)
     impl.mla_preprocess_prolog_v3 = MagicMock(return_value=(None, None))
-    impl._mla_preprocess = MagicMock(return_value=(None, None))
+    impl._mla_preprocess = MagicMock(return_value=(None, None, None))
     impl.o_proj = MagicMock(side_effect=lambda tensor, **_kwargs: (tensor,))
 
     hidden = torch.zeros(2, 128)
@@ -1025,7 +1025,7 @@ def test_forward_falls_back_when_dcp_prefill_current_buffer_is_too_small():
     impl._prefill_requires_current_kv = MagicMock(return_value=True)
     impl._cache_requires_prolog_v3_writer = MagicMock(return_value=True)
     impl.mla_preprocess_prolog_v3 = MagicMock(return_value=(None, None))
-    impl._mla_preprocess = MagicMock(return_value=(None, None))
+    impl._mla_preprocess = MagicMock(return_value=(None, None, None))
     impl.o_proj = MagicMock(side_effect=lambda tensor, **_kwargs: (tensor,))
 
     hidden = torch.zeros(2, 128)
@@ -1533,7 +1533,7 @@ def test_wide_draft_forward_uses_regular_projection_for_fused_cache():
     impl.enable_mlapo = True  # The adapter must take priority even over the older decode fusion.
     impl.mla_preprocess_prolog_v3 = MagicMock(return_value=(None, None))
     impl.mla_preprocess_only_decode = MagicMock(return_value=(None, None))
-    impl._mla_preprocess = MagicMock(return_value=(None, None))
+    impl._mla_preprocess = MagicMock(return_value=(None, None, None))
     impl.o_proj = MagicMock(side_effect=lambda tensor, **_kwargs: (tensor,))
     hidden = torch.zeros(1, 14336)
     output = torch.empty(1, impl.num_heads * impl.v_head_dim)
