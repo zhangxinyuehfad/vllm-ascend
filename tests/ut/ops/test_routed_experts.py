@@ -94,10 +94,7 @@ def test_eplb_expert_tensor_list_supports_upstream_uint8_contract():
         for actual, expected in zip(viewed, expert_tensors)
     )
 
-    registered = [
-        w.view(torch.uint8) if w.element_size() == 1 else w
-        for w in [weights, torch.randn(2, 5)]
-    ]
+    registered = [w.view(torch.uint8) if w.element_size() == 1 else w for w in [weights, torch.randn(2, 5)]]
     assert isinstance(registered[0], EplbExpertTensorList)
     assert all(tensor.dtype == torch.uint8 for tensor in registered[0])
     assert registered[1].dtype == torch.float32
