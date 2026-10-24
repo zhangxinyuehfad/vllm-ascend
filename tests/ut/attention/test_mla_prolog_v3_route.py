@@ -179,6 +179,9 @@ def _make_post_load_impl(monkeypatch, impl_type=AscendMLAImpl):
     owner.indexer = None
     owner.kv_cache_dtype = "auto"
     owner.head_size = impl.kv_lora_rank + impl.qk_rope_head_dim
+    # vLLM main's ``MLAAttention.get_kv_cache_spec`` reads this instance
+    # attribute set by ``__init__``; this stub bypasses ``__init__``.
+    owner.topk_buffer_width = None
     owner.sliding_window = None
     owner.non_causal_multi_token_decode = False
     impl.vllm_config.compilation_config.static_forward_context[impl.layer_name] = owner
