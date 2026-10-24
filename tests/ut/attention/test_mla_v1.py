@@ -3609,6 +3609,10 @@ def test_split_fused_qkv_lora_plain_layout_has_no_gate():
     torch.testing.assert_close(kv_no_split, qkv_lora[:, 4:])
 
 
+@pytest.mark.skipif(
+    vllm_version_is("0.31.0"),
+    reason="gate-fused QKV-A layout is vLLM main only",
+)
 def test_split_fused_qkv_lora_peels_kimi_output_gate():
     """A gate-fused layout returns the trailing shard separately from q/kv."""
     qkv_lora = torch.arange(15, dtype=torch.float32).reshape(1, 15)
