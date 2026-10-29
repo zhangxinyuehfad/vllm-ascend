@@ -238,7 +238,6 @@ Single-node deployment completes both Prefill and Decode within the same node. T
     export HCCL_BUFFSIZE=1024
     export TASK_QUEUE_ENABLE=1
     export HCCL_OP_EXPANSION_MODE="AIV"
-    export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
 
     # Ensure the model path matches the directory recorded during download
     vllm serve /root/.cache/modelscope/hub/models/vllm-ascend/DeepSeek-V4-Flash-w8a8-mtp \
@@ -281,7 +280,6 @@ Single-node deployment completes both Prefill and Decode within the same node. T
     export HCCL_BUFFSIZE=1024
     export TASK_QUEUE_ENABLE=1
     export HCCL_OP_EXPANSION_MODE="AIV"
-    export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
 
     # Ensure the model path matches the directory recorded during download
     vllm serve /path/to/DeepSeek-V4-Flash-0731-w8a8 \
@@ -410,7 +408,6 @@ Key Parameter Descriptions:
 - `--speculative-config` configures speculative decoding to accelerate inference. Use `mtp` for Multi-Token Prediction (MTP) and `dspark` for DSpark models. When using DSpark, `num_speculative_tokens` must be at least 5 (check the checkpoint's `config.json`).
 - `--compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}'` enables full ACL graph execution in the decode phase to reduce scheduling latency.
 - `--additional-config` enables Ascend-specific optimizations. `enable_npugraph_ex` enables enhanced ACL graph execution, `enable_static_kernel: false` keeps static-kernel compilation disabled, `enable_cpu_binding` enables Ascend-native CPU binding, and `multistream_overlap_shared_expert` overlaps shared expert computation for better MoE throughput.
-- `VLLM_PREFIX_CACHE_RETENTION_INTERVAL`: Controls the retention interval, in tokens, for prefix-cache checkpoints of hybrid attention layers. It is applicable to DeepSeek-V4 and takes effect only when prefix caching is enabled. Under KV-cache pressure, it can improve the effective prefix-cache hit rate for reusable long prefixes. The value must be a non-negative multiple of `--block-size`; for DeepSeek-V4-Flash, 128 times `--block-size` is recommended. Set it to `4096` when `--block-size` is `32`, or `16384` when `--block-size` is `128`.
 
 Common Issues Tip: If you encounter issues, please refer to the [Public FAQs](../../faqs.md) for troubleshooting.
 
@@ -586,7 +583,6 @@ The following sections describe multi-node PD separation deployment on Atlas 800
             export HCCL_BUFFSIZE=1024
             export TASK_QUEUE_ENABLE=1
             export HCCL_OP_EXPANSION_MODE=CCU_SCHED
-            export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
             export VLLM_USE_FASTOKENS=1
 
             # With --pcp-size 4, the launcher passes 0,1,2,3 for this Prefill instance.
@@ -924,7 +920,6 @@ The following sections describe multi-node PD separation deployment on Atlas 800
             export TASK_QUEUE_ENABLE=1
             export HCCL_OP_EXPANSION_MODE="AIV"
             export ASCEND_RT_VISIBLE_DEVICES=$1
-            export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
 
             # Ensure the model path matches the directory recorded during download
             vllm serve /root/.cache/modelscope/hub/models/vllm-ascend/DeepSeek-V4-Flash-w8a8-mtp \
@@ -1224,7 +1219,6 @@ The following sections describe multi-node PD separation deployment on Atlas 800
             export HCCL_OP_EXPANSION_MODE="AIV"
             export ASCEND_RT_VISIBLE_DEVICES=$1
             export VLLM_USE_V2_MODEL_RUNNER=1
-            export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
 
             # Ensure the model path matches the directory recorded during download
             vllm serve /path/to/DeepSeek-V4-Flash-0731-w8a8 \
@@ -1943,7 +1937,6 @@ This section provides PD separation deployment examples with a KV Cache Pool for
         export HCCL_BUFFSIZE=1024
         export TASK_QUEUE_ENABLE=1
         export HCCL_OP_EXPANSION_MODE=CCU_SCHED
-        export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
         export VLLM_USE_FASTOKENS=1
 
         # With --pcp-size 4, the launcher passes 0,1,2,3 for this Prefill instance.
@@ -2338,7 +2331,6 @@ This section provides PD separation deployment examples with a KV Cache Pool for
         export HCCL_OP_EXPANSION_MODE="AIV"
         export ASCEND_RT_VISIBLE_DEVICES=$1
         export VLLM_USE_V2_MODEL_RUNNER=1
-        export VLLM_PREFIX_CACHE_RETENTION_INTERVAL=4096
 
         # Parameters required by the Memcache KV Cache Pool.
         MEMCACHE_INSTALL_PATH="<MEMCACHE_INSTALL_PATH>"
